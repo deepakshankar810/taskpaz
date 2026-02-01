@@ -12,8 +12,20 @@ import { Transaction } from '@/lib/types';
 import { docToTransaction } from '@/lib/db/finance';
 
 export function useFinance(userId: string | undefined | null) {
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [transactions, setTransactions] = useState<Transaction[]>(() => {
+        if (typeof window !== 'undefined' && userId) {
+            const cached = localStorage.getItem(`finance_${userId}`);
+            if (cached) {
+                try {
+                    return JSON.parse(cached);
+                } catch (e) {
+                    return [];
+                }
+            }
+        }
+        return [];
+    });
+    const [loading, setLoading] = useState(!transactions.length);
     const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
@@ -23,7 +35,9 @@ export function useFinance(userId: string | undefined | null) {
             return;
         }
 
-        setLoading(true);
+        if (!transactions.length) {
+            setLoading(true);
+        }
 
         const q = query(
             collection(db, 'transactions'),
@@ -37,6 +51,9 @@ export function useFinance(userId: string | undefined | null) {
             unsubscribe = onSnapshot(q, {
                 next: (snapshot) => {
                     const data = snapshot.docs.map(docToTransaction);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem(`finance_${userId}`, JSON.stringify(data));
+                    }
                     setTransactions(data);
                     setLoading(false);
                     setError(null);

@@ -21,16 +21,29 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async () => {
     if (!user) return;
-    setLoading(true);
+
+    // 1. Optimistic update: Update localStorage immediately
+    const updatedProfile = {
+      id: user.uid,
+      name: name,
+      email: user.email || '',
+      avatar: user.photoURL || '',
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(`profile_${user.uid}`, JSON.stringify(updatedProfile));
+
+    // 2. Fire and forget server updates
+    toast.success('Profile updated successfully');
+
     try {
+      // Update Firebase Auth profile
       await updateProfile(user, { displayName: name });
+      // Update Firestore profile
       await createOrUpdateUserProfile(user);
-      toast.success('Profile updated successfully');
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to update profile');
-    } finally {
-      setLoading(false);
+      console.error('Background profile update failed:', error);
+      // We don't necessarily show an error toast here if we want it to feel "done" 
+      // but maybe a subtle one if it actually fails long term.
     }
   };
 

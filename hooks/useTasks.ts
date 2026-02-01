@@ -66,7 +66,9 @@ export function useTasks(userId: string | undefined | null) {
             return;
         }
 
-        setLoading(true);
+        if (!tasks.length) {
+            setLoading(true);
+        }
         setError(null);
 
         // Tasks are in a top-level 'tasks' collection, filtered by userId
@@ -147,9 +149,28 @@ export function useTasks(userId: string | undefined | null) {
         });
 
         return updated.sort((a, b) => {
-            const timeA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
-            const timeB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
-            return (timeB || 0) - (timeA || 0);
+            // 1. Status priority: Active (pending/in-progress) first, then Completed
+            const isAActive = a.status !== 'completed';
+            const isBActive = b.status !== 'completed';
+
+            if (isAActive && !isBActive) return -1;
+            if (!isAActive && isBActive) return 1;
+
+            if (isAActive && isBActive) {
+                // 2. Both active: sort by due date (closest first)
+                if (a.dueDate && b.dueDate) {
+                    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+                }
+                if (a.dueDate) return -1;
+                if (b.dueDate) return 1;
+                // Fallback to createdAt
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            } else {
+                // 3. Both completed: sort by updatedAt or completedAt (most recent first)
+                const timeA = a.completedAt ? new Date(a.completedAt).getTime() : new Date(a.updatedAt).getTime();
+                const timeB = b.completedAt ? new Date(b.completedAt).getTime() : new Date(b.updatedAt).getTime();
+                return (timeB || 0) - (timeA || 0);
+            }
         });
     }, [tasks, optimisticTasks, optimisticUpdates]);
 

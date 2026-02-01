@@ -19,6 +19,7 @@ import {
 import { Wallet, TrendingUp, TrendingDown, Plus, Trash2, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
 import { CreateTransactionInput, TransactionType } from '@/lib/types';
 import { toast } from 'sonner';
+import { toDate } from '@/lib/utils';
 
 export default function FinancePage() {
   const { user } = useAuth();
@@ -254,7 +255,7 @@ export default function FinancePage() {
                     </div>
                     <div>
                       <p className="font-medium">{t.description || t.category}</p>
-                      <p className="text-xs text-slate-500">{t.category} • {t.date.toLocaleDateString()}</p>
+                      <p className="text-xs text-slate-500">{t.category} • {toDate(t.date)?.toLocaleDateString()}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">

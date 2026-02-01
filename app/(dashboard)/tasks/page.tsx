@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { createTask } from '@/lib/db/tasks';
+import { createTask, updateTask as firestoreUpdateTask } from '@/lib/db/tasks';
 import { CreateTaskInput } from '@/lib/types';
 import { useTasksContext } from '@/components/providers/TasksProvider';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,8 @@ function TasksContent() {
 
   // State
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
+  const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [activeTab, setActiveTab] = useState("list");
@@ -78,6 +80,48 @@ function TasksContent() {
       toast.error('Failed to sync task to server.');
       removeOptimisticTask(taskId);
     });
+  };
+
+  const handleEditTask = (data: CreateTaskInput) => {
+    if (!user || !taskToEdit) return;
+
+    const taskId = taskToEdit.id;
+
+    // 1. Instant UI update
+    optimisticUpdateTask(taskId, {
+      ...data,
+      dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+      updatedAt: new Date()
+    });
+
+    setIsEditTaskOpen(false);
+    setTaskToEdit(null);
+    toast.success('Task updated');
+
+    // 2. Background Sync
+    firestoreUpdateTask(taskId, data).catch((error) => {
+      console.error('Update task error:', error);
+      toast.error('Failed to sync changes.');
+    });
+  };
+
+  const openEditModal = (task: any) => {
+    // Format date for the HTML input[type="date"]
+    let dateStr = '';
+    let timeStr = '';
+
+    if (task.dueDate) {
+      const d = new Date(task.dueDate);
+      dateStr = d.toISOString().split('T')[0];
+      timeStr = d.toTimeString().split(':').slice(0, 2).join(':');
+    }
+
+    setTaskToEdit({
+      ...task,
+      dueDate: dateStr,
+      dueTime: timeStr
+    });
+    setIsEditTaskOpen(true);
   };
 
   const handleCompleteTask = async (taskId: string) => {
@@ -151,6 +195,23 @@ function TasksContent() {
             />
           </DialogContent>
         </Dialog>
+
+        {/* Edit Task Dialog */}
+        <Dialog open={isEditTaskOpen} onOpenChange={setIsEditTaskOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Task</DialogTitle>
+            </DialogHeader>
+            {taskToEdit && (
+              <TaskForm
+                onSubmit={handleEditTask}
+                isLoading={isSaving}
+                submitLabel="Save Changes"
+                defaultValues={taskToEdit}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Tabs defaultValue="list" className="w-full" onValueChange={setActiveTab}>
@@ -178,6 +239,7 @@ function TasksContent() {
                     task={task}
                     onComplete={() => handleCompleteTask(task.id)}
                     onDelete={() => handleDeleteTask(task.id)}
+                    onEdit={() => openEditModal(task)}
                   />
                 ))
             )}

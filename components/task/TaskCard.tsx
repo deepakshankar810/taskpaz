@@ -3,16 +3,17 @@
 import { Task } from '@/lib/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, Tag, Trash2, CheckCircle } from 'lucide-react';
+import { Clock, Tag, Trash2, CheckCircle, Pencil } from 'lucide-react';
 import { PriorityBadge } from './PriorityBadge';
 import { CategoryBadge } from './CategoryBadge';
 interface TaskCardProps {
   task: Task;
   onComplete?: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
 }
 
-export function TaskCard({ task, onComplete, onDelete }: TaskCardProps) {
+export function TaskCard({ task, onComplete, onDelete, onEdit }: TaskCardProps) {
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -40,9 +41,14 @@ export function TaskCard({ task, onComplete, onDelete }: TaskCardProps) {
         </div>
       </CardContent>
       <CardFooter className="px-4 py-3 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-2">
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={onDelete}>
-          <Trash2 className="w-4 h-4" />
-        </Button>
+        <div className="flex-1 flex gap-2">
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-500" onClick={onEdit}>
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500" onClick={onDelete}>
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
         {task.status !== 'completed' && (
           <Button size="sm" className="h-8" onClick={onComplete}>
             <CheckCircle className="w-4 h-4 mr-1" /> Complete

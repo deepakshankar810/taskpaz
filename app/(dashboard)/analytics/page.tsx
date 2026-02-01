@@ -22,6 +22,7 @@ import {
   Area
 } from 'recharts';
 import { startOfDay, subDays, format, isSameDay, startOfMonth, subMonths, isSameMonth } from 'date-fns';
+import { toDate } from '@/lib/utils';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 const PRIORITY_COLORS = {
@@ -39,22 +40,25 @@ export default function AnalyticsPage() {
   // 1. Efficiency (Completion Rate)
   const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
 
-  // 2. Task Trend Data (Last 7 Days)
+  // 2. Task Trend Data (Last 30 Days)
   const taskTrendData = useMemo(() => {
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const d = subDays(new Date(), 6 - i);
+    const last30Days = Array.from({ length: 30 }, (_, i) => {
+      const d = subDays(new Date(), 29 - i);
       return startOfDay(d);
     });
 
-    return last7Days.map(date => {
-      const count = tasks.filter(t =>
-        t.status === 'completed' &&
-        t.completedAt &&
-        isSameDay(new Date(t.completedAt), date)
-      ).length;
+    return last30Days.map(date => {
+      const count = tasks.filter(t => {
+        if (t.status !== 'completed') return false;
+
+        const completionDate = toDate(t.completedAt) || toDate(t.updatedAt);
+        if (!completionDate) return false;
+
+        return isSameDay(completionDate, date);
+      }).length;
 
       return {
-        name: format(date, 'EEE'), // Mon, Tue...
+        name: format(date, 'MMM d'), // e.g., "Feb 1"
         completed: count
       };
     });
@@ -91,7 +95,10 @@ export default function AnalyticsPage() {
     });
 
     return last6Months.map(date => {
-      const monthlyTransactions = transactions.filter(t => isSameMonth(new Date(t.date), date));
+      const monthlyTransactions = transactions.filter(t => {
+        const transDate = toDate(t.date);
+        return transDate && isSameMonth(transDate, date);
+      });
       const income = monthlyTransactions
         .filter(t => t.type === 'income')
         .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -132,16 +139,22 @@ export default function AnalyticsPage() {
         {/* Task Trend Bar Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Task Completion (Last 7 Days)</CardTitle>
+            <CardTitle>Task Completion (Last 30 Days)</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={taskTrendData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#888888' }} axisLine={false} tickLine={false} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 10, fill: '#888888' }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={4} // Show every 5th label to avoid crowding
+                />
                 <YAxis tick={{ fontSize: 12, fill: '#888888' }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar dataKey="completed" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
+                <Bar dataKey="completed" fill="#3b82f6" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

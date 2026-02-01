@@ -11,16 +11,18 @@ import { Label } from '@/components/ui/label';
 
 // Internal form state can have strings for dates (HTML input requirement)
 interface TaskFormValues extends Omit<CreateTaskInput, 'dueDate'> {
-  dueDate?: string | Date; // Allow string for input[type="date"]
+  dueDate?: string;
+  dueTime?: string;
 }
 
 interface TaskFormProps {
   onSubmit: (data: CreateTaskInput) => Promise<void> | void;
   isLoading?: boolean;
-  defaultValues?: Partial<TaskFormValues>; // Accept string dates in defaults
+  defaultValues?: Partial<TaskFormValues>;
+  submitLabel?: string;
 }
 
-export function TaskForm({ onSubmit, isLoading, defaultValues }: TaskFormProps) {
+export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel }: TaskFormProps) {
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<TaskFormValues>({
     defaultValues
   });
@@ -29,18 +31,26 @@ export function TaskForm({ onSubmit, isLoading, defaultValues }: TaskFormProps) 
   const onFormSubmit = async (data: TaskFormValues) => {
     try {
       setIsSubmitting(true);
+
+      let finalDueDate: Date | undefined;
+      if (data.dueDate) {
+        finalDueDate = new Date(data.dueDate);
+        if (data.dueTime) {
+          const [hours, minutes] = data.dueTime.split(':').map(Number);
+          finalDueDate.setHours(hours, minutes);
+        }
+      }
+
       const result = onSubmit({
         ...data,
-        // Ensure we pass back a real Date object to the handler
-        dueDate: data.dueDate ? new Date(data.dueDate) : undefined
+        dueDate: finalDueDate
       });
 
-      // If it's a promise, await it (for legacy or non-optimistic handlers)
       if (result instanceof Promise) {
         await result;
       }
 
-      reset(); // Clear form for next time
+      reset();
     } finally {
       setIsSubmitting(false);
     }
@@ -64,7 +74,10 @@ export function TaskForm({ onSubmit, isLoading, defaultValues }: TaskFormProps) 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Priority</Label>
-          <Select onValueChange={(v) => setValue('priority', v as TaskPriority)}>
+          <Select
+            defaultValue={defaultValues?.priority}
+            onValueChange={(v) => setValue('priority', v as TaskPriority)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select" />
             </SelectTrigger>
@@ -79,7 +92,10 @@ export function TaskForm({ onSubmit, isLoading, defaultValues }: TaskFormProps) 
 
         <div className="space-y-2">
           <Label>Category</Label>
-          <Select onValueChange={(v) => setValue('category', v as TaskCategory)}>
+          <Select
+            defaultValue={defaultValues?.category}
+            onValueChange={(v) => setValue('category', v as TaskCategory)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select" />
             </SelectTrigger>
@@ -93,13 +109,19 @@ export function TaskForm({ onSubmit, isLoading, defaultValues }: TaskFormProps) 
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="dueDate">Due Date</Label>
-        <Input id="dueDate" type="date" {...register('dueDate')} />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="dueDate">Due Date</Label>
+          <Input id="dueDate" type="date" {...register('dueDate')} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="dueTime">Due Time</Label>
+          <Input id="dueTime" type="time" {...register('dueTime')} />
+        </div>
       </div>
 
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Creating...' : 'Create Task'}
+        {loading ? (submitLabel === 'Save Changes' ? 'Saving...' : 'Creating...') : (submitLabel || 'Create Task')}
       </Button>
     </form>
   );
