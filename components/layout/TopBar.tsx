@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, Search, Bell, Check } from 'lucide-react';
+import { Menu, Search, Bell, Check, AlertCircle, Clock, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -8,25 +8,95 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useTasks } from '@/hooks/useTasks';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { formatDistanceToNow, isPast, isToday, isTomorrow } from 'date-fns';
 
 interface TopBarProps {
   onMenuClick: () => void;
 }
 
-const MOCK_NOTIFICATIONS = [
-  { id: 1, title: 'Welcome to Taskpaz!', description: 'Get started by creating your first project.', time: '2m ago', read: false },
-  { id: 2, title: 'Task Due Soon', description: '"Update Portfolio" is due tomorrow.', time: '1h ago', read: false },
-  { id: 3, title: 'New Feature', description: 'Check out the new Analytics dashboard.', time: '1d ago', read: true },
-];
-
 export function TopBar({ onMenuClick }: TopBarProps) {
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const { user } = useAuth();
+  const { tasks } = useTasks(user?.uid);
+  const [readIds, setReadIds] = useState<string[]>([]);
+
+  // Load read status from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('read_notifications');
+      if (saved) setReadIds(JSON.parse(saved));
+    }
+  }, []);
+
+  const notifications = useMemo(() => {
+    if (!tasks) return [];
+
+    const items: any[] = [];
+
+    // 1. Urgent Tasks (Uncompleted)
+    const urgentTasks = tasks.filter(t => t.priority === 'urgent' && t.status !== 'completed');
+    urgentTasks.forEach(t => {
+      items.push({
+        id: `urgent-${t.id}`,
+        taskId: t.id,
+        title: 'High Priority Alert',
+        description: `"${t.title}" is marked as Urgent and is still pending.`,
+        time: formatDistanceToNow(new Date(t.createdAt), { addSuffix: true }),
+        type: 'urgent',
+        read: readIds.includes(`urgent-${t.id}`)
+      });
+    });
+
+    // 2. Overdue Tasks
+    const overdueTasks = tasks.filter(t => t.dueDate && isPast(new Date(t.dueDate)) && !isToday(new Date(t.dueDate)) && t.status !== 'completed');
+    overdueTasks.forEach(t => {
+      items.push({
+        id: `overdue-${t.id}`,
+        taskId: t.id,
+        title: 'Task Overdue',
+        description: `"${t.title}" was due on ${new Date(t.dueDate!).toLocaleDateString()}.`,
+        time: formatDistanceToNow(new Date(t.dueDate!), { addSuffix: true }),
+        type: 'overdue',
+        read: readIds.includes(`overdue-${t.id}`)
+      });
+    });
+
+    // 3. Due Today/Tomorrow
+    const upcomingTasks = tasks.filter(t => t.dueDate && (isToday(new Date(t.dueDate)) || isTomorrow(new Date(t.dueDate))) && t.status !== 'completed');
+    upcomingTasks.forEach(t => {
+      const isDueToday = isToday(new Date(t.dueDate!));
+      items.push({
+        id: `due-${t.id}`,
+        taskId: t.id,
+        title: isDueToday ? 'Due Today' : 'Due Tomorrow',
+        description: `"${t.title}" is due ${isDueToday ? 'today' : 'tomorrow'}.`,
+        time: formatDistanceToNow(new Date(t.dueDate!), { addSuffix: true }),
+        type: 'upcoming',
+        read: readIds.includes(`due-${t.id}`)
+      });
+    });
+
+    return items.slice(0, 10); // Limit to 10 notifications
+  }, [tasks, readIds]);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    const allIds = notifications.map(n => n.id);
+    const newReadIds = Array.from(new Set([...readIds, ...allIds]));
+    setReadIds(newReadIds);
+    localStorage.setItem('read_notifications', JSON.stringify(newReadIds));
+  };
+
+  const markRead = (id: string) => {
+    if (!readIds.includes(id)) {
+      const newReadIds = [...readIds, id];
+      setReadIds(newReadIds);
+      localStorage.setItem('read_notifications', JSON.stringify(newReadIds));
+    }
   };
 
   return (
@@ -53,36 +123,58 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       <div className="flex items-center gap-2">
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5 text-slate-500" />
+            <Button variant="ghost" size="icon" className="relative group">
+              <Bell className="h-5 w-5 text-slate-500 group-hover:text-blue-500 transition-colors" />
               {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-950" />
+                <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-950 animate-pulse" />
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-0" align="end">
-            <div className="flex items-center justify-between p-4 border-b">
+          <PopoverContent className="w-80 p-0 shadow-xl border-slate-200 dark:border-slate-800" align="end">
+            <div className="flex items-center justify-between p-4 border-b bg-slate-50/50 dark:bg-slate-900/50">
               <h4 className="font-semibold text-sm">Notifications</h4>
               {unreadCount > 0 && (
-                <Button variant="ghost" size="sm" className="h-auto text-xs text-blue-500 p-0 hover:bg-transparent" onClick={markAllRead}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto text-xs text-blue-500 p-0 hover:bg-transparent hover:underline"
+                  onClick={markAllRead}
+                >
                   Mark all read
                 </Button>
               )}
             </div>
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="h-[350px]">
               {notifications.length === 0 ? (
-                <div className="p-4 text-center text-sm text-slate-500">No notifications.</div>
+                <div className="flex flex-col items-center justify-center p-8 text-center">
+                  <Bell className="h-8 w-8 text-slate-200 mb-2" />
+                  <p className="text-sm text-slate-500 font-medium">All caught up!</p>
+                  <p className="text-xs text-slate-400 mt-1">No new notifications for you.</p>
+                </div>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
                   {notifications.map(n => (
-                    <div key={n.id} className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors ${!n.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
-                      <div className="flex justify-between items-start mb-1">
-                        <h5 className={`text-sm ${!n.read ? 'font-semibold text-slate-900 dark:text-slate-100' : 'font-medium text-slate-700 dark:text-slate-300'}`}>
-                          {n.title}
-                        </h5>
-                        <span className="text-[10px] text-slate-400">{n.time}</span>
+                    <div
+                      key={n.id}
+                      onClick={() => markRead(n.id)}
+                      className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors cursor-pointer ${!n.read ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}
+                    >
+                      <div className="flex gap-3">
+                        <div className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${n.type === 'urgent' ? 'bg-red-500' :
+                            n.type === 'overdue' ? 'bg-orange-500' : 'bg-blue-500'
+                          } ${n.read ? 'opacity-20' : 'animate-pulse'}`} />
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start mb-1 gap-2">
+                            <h5 className={`text-sm leading-tight ${!n.read ? 'font-semibold text-slate-900 dark:text-slate-100' : 'font-medium text-slate-600 dark:text-slate-400'}`}>
+                              {n.title}
+                            </h5>
+                            <span className="text-[10px] text-slate-400 whitespace-nowrap">{n.time}</span>
+                          </div>
+                          <p className={`text-xs leading-normal line-clamp-2 ${!n.read ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400'}`}>
+                            {n.description}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs text-slate-500 line-clamp-2">{n.description}</p>
                     </div>
                   ))}
                 </div>

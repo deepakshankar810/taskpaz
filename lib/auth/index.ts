@@ -1,7 +1,7 @@
 import { signInWithPopup, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
-import type { User } from '@/lib/types';
+import type { User, UserPreferences } from '@/lib/types';
 
 export const signInWithGoogle = async () => {
   try {
@@ -60,5 +60,18 @@ export const createOrUpdateUserProfile = async (user: FirebaseUser) => {
   } catch (error) {
     console.error('Error creating/updating user profile:', error);
     // Suppress error so login can proceed even if profile sync fails
+  }
+};
+
+export const updateUserPreferences = async (userId: string, preferences: Partial<UserPreferences>) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    // We use setDoc with merge: true to avoid overwriting other fields if we just want to patch preferences
+    // But since preferences is a nested object, we should be careful. 
+    // Using dot notation for updates is safer if we want to update just one field, but setDoc merge is fine if we pass the whole object structure we want merged.
+    await setDoc(userRef, { preferences }, { merge: true });
+  } catch (error) {
+    console.error('Error updating preferences:', error);
+    throw error;
   }
 };

@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTheme } from 'next-themes';
 import { updateProfile } from 'firebase/auth';
-import { createOrUpdateUserProfile } from '@/lib/auth';
+import { createOrUpdateUserProfile, getUserProfile } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Moon, Sun } from 'lucide-react';
 
@@ -71,13 +71,6 @@ export default function SettingsPage() {
           <CardDescription>Customize your application experience.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Email Notifications</Label>
-              <p className="text-sm text-slate-500">Receive summaries of your daily tasks.</p>
-            </div>
-            <Switch defaultChecked id="notifications" />
-          </div>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label className="flex items-center gap-2">

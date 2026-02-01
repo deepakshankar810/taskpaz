@@ -8,10 +8,10 @@ import { useProjectsContext } from '@/components/providers/ProjectsProvider';
 import { useFinance } from '@/hooks/useFinance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, CheckCircle2, Clock, AlertCircle, TrendingUp, Folder, Wallet } from 'lucide-react';
+import { Plus, CheckCircle2, Clock, TrendingUp, Folder, Wallet } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import type { Task, User } from '@/lib/types';
+import type { User } from '@/lib/types';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -77,8 +77,6 @@ export default function DashboardPage() {
     const prefix = currency.length > 1 ? `${currency} ` : currency;
     return `${prefix}${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
-
-  const isLoading = loadingTasks || loadingProjects || loadingFinance;
 
   return (
     <div className="space-y-6">

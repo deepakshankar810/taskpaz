@@ -3,13 +3,11 @@ import {
     collection,
     query,
     where,
-    orderBy,
     onSnapshot,
-    Timestamp,
-    type Unsubscribe
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Task, TaskStatus, TaskPriority, TaskCategory } from '@/lib/types';
+import type { Task } from '@/lib/types';
+import { updateTask, deleteTask } from '@/lib/db/tasks';
 
 // Helper to match `docToTask` in lib/db/tasks.ts but safely inside the hook
 const docToTask = (docSnap: any): Task => {
@@ -51,93 +49,59 @@ export function useTasks(userId: string | undefined | null) {
     });
     const [loading, setLoading] = useState(!tasks.length);
     const [error, setError] = useState<Error | null>(null);
+    const [userProfile, setUserProfile] = useState<any>(null);
+
+    // Fetch user profile to check preferences
+    useEffect(() => {
+        if (!userId) return;
+        import('@/lib/auth').then(({ getUserProfile }) => {
+            getUserProfile(userId).then(setUserProfile);
+        });
+    }, [userId]);
 
     useEffect(() => {
         if (!userId) {
-            setLoading(false);
             setTasks([]);
+            setLoading(false);
             return;
         }
 
-        // 1. Try to load from cache IMMEDIATELY when we have a userId
-        // This covers the case where the hook mounted before auth was ready
-        const cached = localStorage.getItem(`tasks_${userId}`);
-        if (cached) {
-            try {
-                const parsed = JSON.parse(cached);
-                if (parsed && parsed.length > 0) {
-                    const hydrated = parsed.map((t: any) => ({
-                        ...t,
-                        createdAt: new Date(t.createdAt),
-                        updatedAt: new Date(t.updatedAt),
-                        dueDate: t.dueDate ? new Date(t.dueDate) : undefined,
-                        completedAt: t.completedAt ? new Date(t.completedAt) : undefined,
-                    }));
-                    setTasks(hydrated);
-                    setLoading(false); // Show content immediately
-                }
-            } catch (e) {
-                // Ignore cache errors
-            }
-        } else {
-            setLoading(true);
-        }
+        setLoading(true);
+        setError(null);
 
-        // Create query
-        const tasksRef = collection(db, 'tasks');
+        // Tasks are in a top-level 'tasks' collection, filtered by userId
         const q = query(
-            tasksRef,
-            where('userId', '==', userId),
-            // We do NOT add orderBy here initially to avoid "requires index" errors 
-            // that might crash the app. We sort in memory.
-            // If you are sure you have the index, you can add: orderBy('createdAt', 'desc')
+            collection(db, 'tasks'),
+            where('userId', '==', userId)
         );
 
-        let unsubscribe: Unsubscribe;
+        const unsubscribe = onSnapshot(q, {
+            next: (snapshot) => {
+                const userTasks = snapshot.docs.map(doc => docToTask(doc));
 
-        try {
-            unsubscribe = onSnapshot(q, {
-                next: (snapshot) => {
-                    const userTasks = snapshot.docs.map(docToTask);
+                // Sort in memory to avoid needing a composite index for where+orderBy
+                userTasks.sort((a, b) => {
+                    const timeA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+                    const timeB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+                    return (timeB || 0) - (timeA || 0);
+                });
 
-                    // Sort in memory to be safe and fast
-                    userTasks.sort((a, b) => {
-                        const timeA = a.createdAt?.getTime() || 0;
-                        const timeB = b.createdAt?.getTime() || 0;
-                        return timeB - timeA; // Newest first
-                    });
-
-                    setTasks(userTasks);
-
-                    // Update cache
-                    if (userId) {
-                        localStorage.setItem(`tasks_${userId}`, JSON.stringify(userTasks));
-                    }
-
-                    setLoading(false);
-                    setError(null);
-                },
-                error: (err) => {
-                    console.error('[useTasks] Snapshot error:', err);
-                    // Don't wipe data on error if we had some; graceful degradation
-                    // If "client offline" error happens, onSnapshot usually handles it by using cache
-                    // effectively suppressing the explicit error for the user.
-                    // However, if we do get a real error (permission etc), we set it.
-                    if (err.code !== 'unavailable') {
-                        setError(err);
-                    }
-                    setLoading(false);
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem(`tasks_${userId}`, JSON.stringify(userTasks));
                 }
-            });
-        } catch (err: any) {
-            console.error('[useTasks] Error setting up listener:', err);
-            setError(err);
-            setLoading(false);
-        }
 
-        return () => {
-            if (unsubscribe) unsubscribe();
-        };
+                setTasks(userTasks);
+                setLoading(false);
+                setError(null);
+            },
+            error: (err) => {
+                console.error('Error fetching tasks:', err);
+                setError(new Error('Failed to load tasks.'));
+                setLoading(false);
+            }
+        });
+
+        return () => unsubscribe();
     }, [userId]);
 
     // Optimistic state
@@ -150,6 +114,9 @@ export function useTasks(userId: string | undefined | null) {
 
     const removeOptimisticTask = (taskId: string) => {
         setOptimisticTasks(prev => prev.filter(t => t.id !== taskId));
+        deleteTask(taskId).catch(err => {
+            console.error("Failed to delete task", err);
+        });
     };
 
     const optimisticUpdateTask = (taskId: string, updates: Partial<Task>) => {
@@ -157,6 +124,10 @@ export function useTasks(userId: string | undefined | null) {
             ...prev,
             [taskId]: { ...(prev[taskId] || {}), ...updates }
         }));
+
+        updateTask(taskId, updates).catch(err => {
+            console.error("Failed to update task", err);
+        });
     };
 
     // Derived state: Combined and sorted tasks

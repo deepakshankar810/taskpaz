@@ -10,7 +10,6 @@ export interface User {
 
 export interface UserPreferences {
   theme: 'light' | 'dark' | 'system';
-  notifications: boolean;
 }
 
 export type TaskStatus = 'pending' | 'in-progress' | 'completed' | 'archived';
