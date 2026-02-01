@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Dispatch, SetStateAction } from 'react';
 import {
     collection,
     query,
@@ -67,5 +67,11 @@ export function useProjects(userId: string | undefined) {
         return () => unsubscribe();
     }, [userId]);
 
-    return { projects, loading, error };
+    return {
+        projects,
+        loading,
+        error,
+        // Expose setter for optimistic updates
+        setProjectsOptimistic: setProjects as Dispatch<SetStateAction<Project[]>>
+    };
 }

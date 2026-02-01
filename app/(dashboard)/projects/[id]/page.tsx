@@ -5,9 +5,7 @@ import dynamic from 'next/dynamic';
 import { useProjectsContext } from '@/components/providers/ProjectsProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { updateProject } from '@/lib/db/projects';
 import { ChevronLeft, Pencil, X } from 'lucide-react';
-import { toast } from 'sonner';
 import Link from 'next/link';
 
 // Lazy-load the heavy Editor component
@@ -24,17 +22,18 @@ const Editor = dynamic(() => import('@/components/editor/Editor'), {
 
 export default function ProjectPage({ params }: { params: any }) {
     const { id } = use(params) as { id: string };
-    const { projects, loading } = useProjectsContext();
+    const { projects, loading, optimisticUpdateProject } = useProjectsContext();
     const project = projects.find(p => p.id === id);
 
     const [isEditing, setIsEditing] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
     const [name, setName] = useState('');
     const [content, setContent] = useState('');
     const [color, setColor] = useState('');
 
-    // Use refs to track the "saved" state of the current document to avoid ghost saves
+    // Track what we've already saved to avoid duplicate saves
     const lastSavedState = useRef({ name: '', content: '' });
+    // Track if we have pending changes for UI feedback
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     useEffect(() => {
         if (project && !isEditing) {
@@ -45,11 +44,18 @@ export default function ProjectPage({ params }: { params: any }) {
                 name: project.name,
                 content: project.content || project.description || ''
             };
+            setHasUnsavedChanges(false);
         }
     }, [project, isEditing]);
 
+    // Track unsaved changes for UI feedback
+    useEffect(() => {
+        if (!isEditing) return;
+        const hasChanges = name !== lastSavedState.current.name || content !== lastSavedState.current.content;
+        setHasUnsavedChanges(hasChanges);
+    }, [name, content, isEditing]);
+
     // We don't block on 'loading' anymore because we have instant-load cache
-    // If the project isn't found even in cache, we show a brief skeleton until sync
     if (!project && loading) return (
         <div className="space-y-6 animate-pulse p-4">
             <div className="flex items-center gap-4">
@@ -69,47 +75,36 @@ export default function ProjectPage({ params }: { params: any }) {
         </div>
     );
 
-    // Auto-save logic
+    // ULTRA-FAST Auto-save: Fire-and-forget with short debounce
     useEffect(() => {
         if (!project || !isEditing) return;
 
-        const timer = setTimeout(async () => {
-            // Only save if something actually changed from the last saved state
+        // Skip if nothing changed
+        if (name === lastSavedState.current.name && content === lastSavedState.current.content) return;
+
+        // Short debounce - just enough to batch rapid keystrokes
+        const timer = setTimeout(() => {
             if (name === lastSavedState.current.name && content === lastSavedState.current.content) return;
 
-            try {
-                setIsSaving(true);
-                await updateProject(id, { name, content, color });
-                lastSavedState.current = { name, content };
-            } catch (error) {
-                console.error('Auto-save failed:', error);
-            } finally {
-                setIsSaving(false);
-            }
-        }, 1000); // 1s debounce
+            // INSTANT: Update local state + cache, fire Firestore in background
+            optimisticUpdateProject(id, { name, content, color });
+            lastSavedState.current = { name, content };
+            setHasUnsavedChanges(false);
+        }, 500); // 500ms debounce - fast but avoids saving on every keystroke
 
         return () => clearTimeout(timer);
-    }, [name, content, color, id, project, isEditing]);
+    }, [name, content, color, id, project, isEditing, optimisticUpdateProject]);
 
-    const handleFinishEditing = async () => {
-        // Switch to view mode immediately for instant feel
+    const handleFinishEditing = () => {
+        // Instant - no waiting
         setIsEditing(false);
 
-        // Perform final check and sync in the background on the next tick
-        setTimeout(async () => {
-            if (name !== lastSavedState.current.name || content !== lastSavedState.current.content) {
-                try {
-                    setIsSaving(true);
-                    await updateProject(id, { name, content, color });
-                    lastSavedState.current = { name, content };
-                } catch (error) {
-                    console.error('Final sync error:', error);
-                    toast.error('Failed to sync final changes');
-                } finally {
-                    setIsSaving(false);
-                }
-            }
-        }, 0);
+        // Save any remaining changes immediately (fire-and-forget)
+        if (name !== lastSavedState.current.name || content !== lastSavedState.current.content) {
+            optimisticUpdateProject(id, { name, content, color });
+            lastSavedState.current = { name, content };
+        }
+        setHasUnsavedChanges(false);
     };
 
     return (
@@ -139,10 +134,10 @@ export default function ProjectPage({ params }: { params: any }) {
 
                 <div className="flex items-center gap-2">
                     <div className="text-xs text-slate-400 mr-2 italic">
-                        {isSaving ? 'Syncing...' : 'All changes saved'}
+                        {hasUnsavedChanges ? 'Typing...' : 'Saved'}
                     </div>
                     {isEditing ? (
-                        <Button onClick={handleFinishEditing} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
+                        <Button onClick={handleFinishEditing} className="bg-indigo-600 hover:bg-indigo-700">
                             <X className="mr-2 h-4 w-4" /> Stop Editing
                         </Button>
                     ) : (
@@ -163,3 +158,4 @@ export default function ProjectPage({ params }: { params: any }) {
         </div>
     );
 }
+

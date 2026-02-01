@@ -1,29 +1,55 @@
 'use client';
 
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useProjects as useProjectsHook } from '@/hooks/useProjects';
 import { Project } from '@/lib/types';
+import { updateProject } from '@/lib/db/projects';
 
 interface ProjectsContextType {
     projects: Project[];
     loading: boolean;
     error: Error | null;
+    optimisticUpdateProject: (projectId: string, data: Partial<Project>) => void;
 }
 
 const ProjectsContext = createContext<ProjectsContextType>({
     projects: [],
     loading: true,
     error: null,
+    optimisticUpdateProject: () => { },
 });
 
 export function ProjectsProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
     // Lift the hook up here so it runs once per session/user
-    const { projects, loading, error } = useProjectsHook(user?.uid);
+    const { projects, loading, error, setProjectsOptimistic } = useProjectsHook(user?.uid);
+
+    // Optimistic update: immediately update local state & cache, fire Firestore in background
+    const optimisticUpdateProject = useCallback((projectId: string, data: Partial<Project>) => {
+        if (!user?.uid) return;
+
+        // 1. Immediately update local state
+        setProjectsOptimistic((prev: Project[]) => {
+            const updated = prev.map(p =>
+                p.id === projectId
+                    ? { ...p, ...data, updatedAt: new Date() }
+                    : p
+            );
+            // 2. Immediately update localStorage cache
+            localStorage.setItem(`projects_${user.uid}`, JSON.stringify(updated));
+            return updated;
+        });
+
+        // 3. Fire Firestore update in background (fire-and-forget)
+        updateProject(projectId, data).catch(err => {
+            console.error('Background save failed:', err);
+            // Could add toast notification here for error recovery
+        });
+    }, [user?.uid, setProjectsOptimistic]);
 
     return (
-        <ProjectsContext.Provider value={{ projects, loading, error }}>
+        <ProjectsContext.Provider value={{ projects, loading, error, optimisticUpdateProject }}>
             {children}
         </ProjectsContext.Provider>
     );
