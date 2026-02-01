@@ -84,3 +84,38 @@ export interface CreateTransactionInput {
   date: Date;
   description: string;
 }
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  name: string;
+  amount: number;
+  category: string;
+  billingCycle: 'monthly' | 'yearly';
+  nextBillingDate: Date;
+  active: boolean;
+  createdAt: Date;
+}
+
+export interface SavingsGoal {
+  id: string;
+  userId: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline?: Date;
+  color: string;
+  isCompleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  read: boolean;
+  createdAt: Date;
+}

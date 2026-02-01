@@ -7,9 +7,11 @@ import {
     onSnapshot,
     Unsubscribe
 } from 'firebase/firestore';
+import { isSameMonth } from 'date-fns';
 import { db } from '@/lib/firebase';
-import { Transaction } from '@/lib/types';
-import { docToTransaction } from '@/lib/db/finance';
+import { Transaction, Subscription, SavingsGoal } from '@/lib/types';
+import { docToTransaction, docToSubscription, docToSavingsGoal } from '@/lib/db/finance';
+import { toDate } from '@/lib/utils';
 
 export function useFinance(userId: string | undefined | null) {
     const [transactions, setTransactions] = useState<Transaction[]>(() => {
@@ -25,6 +27,9 @@ export function useFinance(userId: string | undefined | null) {
         }
         return [];
     });
+
+    const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+    const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
     const [loading, setLoading] = useState(!transactions.length);
     const [error, setError] = useState<Error | null>(null);
 
@@ -45,10 +50,24 @@ export function useFinance(userId: string | undefined | null) {
             orderBy('date', 'desc')
         );
 
-        let unsubscribe: Unsubscribe;
+        const subQ = query(
+            collection(db, 'subscriptions'),
+            where('userId', '==', userId),
+            orderBy('createdAt', 'desc')
+        );
+
+        const goalQ = query(
+            collection(db, 'savingsGoals'),
+            where('userId', '==', userId),
+            orderBy('createdAt', 'desc')
+        );
+
+        let unsubscribeTransactions: Unsubscribe;
+        let unsubscribeSubscriptions: Unsubscribe;
+        let unsubscribeGoals: Unsubscribe;
 
         try {
-            unsubscribe = onSnapshot(q, {
+            unsubscribeTransactions = onSnapshot(q, {
                 next: (snapshot) => {
                     const data = snapshot.docs.map(docToTransaction);
                     if (typeof window !== 'undefined') {
@@ -56,7 +75,6 @@ export function useFinance(userId: string | undefined | null) {
                     }
                     setTransactions(data);
                     setLoading(false);
-                    setError(null);
                 },
                 error: (err) => {
                     console.error('Error fetching transactions:', err);
@@ -64,33 +82,61 @@ export function useFinance(userId: string | undefined | null) {
                     setLoading(false);
                 }
             });
+
+            unsubscribeSubscriptions = onSnapshot(subQ, {
+                next: (snapshot) => {
+                    const data = snapshot.docs.map(docToSubscription);
+                    setSubscriptions(data);
+                }
+            });
+
+            unsubscribeGoals = onSnapshot(goalQ, {
+                next: (snapshot) => {
+                    const data = snapshot.docs.map(docToSavingsGoal);
+                    setSavingsGoals(data);
+                }
+            });
         } catch (err: any) {
-            console.error('Error setting up finance listener:', err);
+            console.error('Error setting up finance listeners:', err);
             setError(err);
             setLoading(false);
         }
 
         return () => {
-            if (unsubscribe) unsubscribe();
+            if (unsubscribeTransactions) unsubscribeTransactions();
+            if (unsubscribeSubscriptions) unsubscribeSubscriptions();
+            if (unsubscribeGoals) unsubscribeGoals();
         };
     }, [userId]);
 
     const stats = useMemo(() => {
+        const now = new Date();
         return transactions.reduce(
             (acc, curr) => {
                 const amount = Number(curr.amount);
+                const d = toDate(curr.date);
+                const isCurrentMonth = d && isSameMonth(d, now);
+
                 if (curr.type === 'income') {
                     acc.income += amount;
                     acc.balance += amount;
+                    if (isCurrentMonth) {
+                        acc.monthlyIncome += amount;
+                        acc.monthlyBalance += amount;
+                    }
                 } else {
                     acc.expenses += amount;
                     acc.balance -= amount;
+                    if (isCurrentMonth) {
+                        acc.monthlyExpenses += amount;
+                        acc.monthlyBalance -= amount;
+                    }
                 }
                 return acc;
             },
-            { income: 0, expenses: 0, balance: 0 }
+            { income: 0, expenses: 0, balance: 0, monthlyIncome: 0, monthlyExpenses: 0, monthlyBalance: 0 }
         );
     }, [transactions]);
 
-    return { transactions, stats, loading, error };
+    return { transactions, subscriptions, savingsGoals, stats, loading, error };
 }

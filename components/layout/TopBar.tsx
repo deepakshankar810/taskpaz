@@ -11,8 +11,9 @@ import {
 import { useState, useMemo, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTasks } from '@/hooks/useTasks';
+import { useFinance } from '@/hooks/useFinance';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { formatDistanceToNow, isPast, isToday, isTomorrow } from 'date-fns';
+import { formatDistanceToNow, isPast, isToday, isTomorrow, differenceInDays } from 'date-fns';
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -21,13 +22,18 @@ interface TopBarProps {
 export function TopBar({ onMenuClick }: TopBarProps) {
   const { user } = useAuth();
   const { tasks } = useTasks(user?.uid);
+  const { subscriptions, savingsGoals } = useFinance(user?.uid);
   const [readIds, setReadIds] = useState<string[]>([]);
+  const [currency, setCurrency] = useState('$');
 
-  // Load read status from localStorage
+  // Load read status and currency from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('read_notifications');
-      if (saved) setReadIds(JSON.parse(saved));
+      const savedRead = localStorage.getItem('read_notifications');
+      if (savedRead) setReadIds(JSON.parse(savedRead));
+
+      const savedCurrency = localStorage.getItem('finance_currency');
+      if (savedCurrency) setCurrency(savedCurrency);
     }
   }, []);
 
@@ -44,6 +50,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         taskId: t.id,
         title: 'High Priority Alert',
         description: `"${t.title}" is marked as Urgent and is still pending.`,
+        date: new Date(t.createdAt),
         time: formatDistanceToNow(new Date(t.createdAt), { addSuffix: true }),
         type: 'urgent',
         read: readIds.includes(`urgent-${t.id}`)
@@ -58,6 +65,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         taskId: t.id,
         title: 'Task Overdue',
         description: `"${t.title}" was due on ${new Date(t.dueDate!).toLocaleDateString()}.`,
+        date: new Date(t.dueDate!),
         time: formatDistanceToNow(new Date(t.dueDate!), { addSuffix: true }),
         type: 'overdue',
         read: readIds.includes(`overdue-${t.id}`)
@@ -73,13 +81,45 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         taskId: t.id,
         title: isDueToday ? 'Due Today' : 'Due Tomorrow',
         description: `"${t.title}" is due ${isDueToday ? 'today' : 'tomorrow'}.`,
+        date: new Date(t.dueDate!),
         time: formatDistanceToNow(new Date(t.dueDate!), { addSuffix: true }),
         type: 'upcoming',
         read: readIds.includes(`due-${t.id}`)
       });
     });
 
-    return items.slice(0, 10); // Limit to 10 notifications
+    // 4. Subscriptions Due Soon (within 3 days)
+    subscriptions?.filter(s => s.active).forEach(s => {
+      const daysLeft = differenceInDays(new Date(s.nextBillingDate), new Date());
+      if (daysLeft >= 0 && daysLeft <= 3) {
+        items.push({
+          id: `sub-${s.id}-${s.nextBillingDate.getTime()}`,
+          title: 'Subscription Reminder',
+          description: `Your ${s.name} subscription (${currency}${s.amount}) is due in ${daysLeft === 0 ? 'today' : daysLeft === 1 ? '1 day' : daysLeft + ' days'}.`,
+          date: new Date(s.nextBillingDate),
+          time: formatDistanceToNow(new Date(s.nextBillingDate), { addSuffix: true }),
+          type: 'recurring',
+          read: readIds.includes(`sub-${s.id}-${s.nextBillingDate.getTime()}`)
+        });
+      }
+    });
+
+    // 5. Savings Goals Met
+    savingsGoals?.filter(g => g.isCompleted).forEach(g => {
+      items.push({
+        id: `goal-${g.id}`,
+        title: 'Goal Achieved! 🎉',
+        description: `Congratulations! You've reached your target of ${currency}${g.targetAmount} for "${g.name}".`,
+        date: new Date(g.updatedAt),
+        time: formatDistanceToNow(new Date(g.updatedAt), { addSuffix: true }),
+        type: 'goal',
+        read: readIds.includes(`goal-${g.id}`)
+      });
+    });
+
+    return items
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .slice(0, 15); // Limit to 15 notifications
   }, [tasks, readIds]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -161,7 +201,9 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                     >
                       <div className="flex gap-3">
                         <div className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${n.type === 'urgent' ? 'bg-red-500' :
-                            n.type === 'overdue' ? 'bg-orange-500' : 'bg-blue-500'
+                          n.type === 'overdue' ? 'bg-orange-500' :
+                            n.type === 'goal' ? 'bg-green-500' :
+                              n.type === 'recurring' ? 'bg-purple-500' : 'bg-blue-500'
                           } ${n.read ? 'opacity-20' : 'animate-pulse'}`} />
                         <div className="flex-1">
                           <div className="flex justify-between items-start mb-1 gap-2">

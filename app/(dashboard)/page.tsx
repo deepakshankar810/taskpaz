@@ -112,8 +112,8 @@ export default function DashboardPage() {
           isCurrency
         />
         <StatsCard
-          title="Net Income"
-          value={formatCurrency(financeStats?.income || 0)}
+          title="Net Income (Month)"
+          value={formatCurrency(financeStats?.monthlyBalance || 0)}
           icon={<TrendingUp className="text-emerald-600" />}
           loading={loadingFinance}
           isCurrency

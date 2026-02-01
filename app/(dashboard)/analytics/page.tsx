@@ -129,7 +129,12 @@ export default function AnalyticsPage() {
   const categoryChartData = useMemo(() => {
     const categories: Record<string, number> = {};
     const details: Record<string, string[]> = {};
-    const expenses = transactions.filter(t => t.type === 'expense');
+    const now = new Date();
+    const expenses = transactions.filter(t => {
+      if (t.type !== 'expense') return false;
+      const d = toDate(t.date);
+      return d && isSameMonth(d, now);
+    });
 
     expenses.forEach(t => {
       const amount = Number(t.amount);
@@ -297,8 +302,9 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      <div className="flex items-center justify-between pt-6 border-t">
+      <div className="flex flex-col pt-6 border-t">
         <h2 className="text-xl font-bold">Financial Insights</h2>
+        <p className="text-sm text-slate-500">Breakdown for {format(new Date(), 'MMMM yyyy')}</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -361,7 +367,7 @@ export default function AnalyticsPage() {
               )}
               {categoryChartData.length > 0 && (
                 <div className="pt-4 mt-4 border-t text-sm text-slate-500 italic">
-                  Tip: Focus on reducing your spending in <strong>{topCategories[0].name}</strong> this month.
+                  💡 Note: Your highest spend this month is in <strong>{topCategories[0].name}</strong>. Keeping an eye on this could help you stay on track!
                 </div>
               )}
             </div>
