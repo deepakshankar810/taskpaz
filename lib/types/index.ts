@@ -64,3 +64,24 @@ export interface CreateProjectInput {
   content?: string;
   color?: string;
 }
+
+export type TransactionType = 'income' | 'expense';
+
+export interface Transaction {
+  id: string;
+  userId: string;
+  amount: number;
+  type: TransactionType;
+  category: string;
+  date: Date;
+  description: string;
+  createdAt: Date;
+}
+
+export interface CreateTransactionInput {
+  amount: number;
+  type: TransactionType;
+  category: string;
+  date: Date;
+  description: string;
+}
