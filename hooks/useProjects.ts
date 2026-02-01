@@ -37,6 +37,21 @@ export function useProjects(userId: string | undefined) {
             return;
         }
 
+        // 1. Try to load from cache IMMEDIATELY when we have a userId
+        // This covers the case where the hook mounted before auth was ready
+        const cached = localStorage.getItem(`projects_${userId}`);
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (parsed && parsed.length > 0) {
+                    setProjects(parsed);
+                    setLoading(false); // Show content immediately
+                }
+            } catch (e) {
+                // Ignore cache errors
+            }
+        }
+
         const q = query(
             collection(db, 'projects'),
             where('userId', '==', userId),

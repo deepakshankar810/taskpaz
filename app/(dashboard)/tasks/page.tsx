@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 function TasksContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
-  const { tasks, loading, error, addOptimisticTask, removeOptimisticTask } = useTasksContext();
+  const { tasks, loading, error, addOptimisticTask, removeOptimisticTask, optimisticUpdateTask } = useTasksContext();
 
   // State
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
@@ -82,14 +82,17 @@ function TasksContent() {
 
   const handleCompleteTask = async (taskId: string) => {
     try {
-      const { completeTask } = await import('@/lib/db/tasks');
-      // For instant feedback, we'd need a way to optimistically update an existing task
-      // For now, at least we don't block the UI
+      // 1. Instant UI update
+      optimisticUpdateTask(taskId, { status: 'completed', completedAt: new Date() });
       toast.success('Task completed!');
+
+      // 2. Background Server Sync
+      const { completeTask } = await import('@/lib/db/tasks');
       await completeTask(taskId);
     } catch (error) {
       console.error('Complete task error:', error);
       toast.error('Failed to update task.');
+      // Ideally revert optimistic update here
     }
   };
 
@@ -168,14 +171,15 @@ function TasksContent() {
                 <p className="text-sm">Create your first task to get started!</p>
               </div>
             ) : (
-              tasks.map(task => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onComplete={() => handleCompleteTask(task.id)}
-                  onDelete={() => handleDeleteTask(task.id)}
-                />
-              ))
+              tasks
+                .map(task => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onComplete={() => handleCompleteTask(task.id)}
+                    onDelete={() => handleDeleteTask(task.id)}
+                  />
+                ))
             )}
           </div>
         </TabsContent>

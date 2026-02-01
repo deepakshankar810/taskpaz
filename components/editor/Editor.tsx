@@ -19,7 +19,7 @@ import { common, createLowlight } from 'lowlight';
 import { Button } from '@/components/ui/button';
 import {
     Bold, Italic, Underline as UnderlineIcon,
-    AlignLeft, AlignCenter, AlignRight,
+    AlignLeft, AlignCenter, AlignRight, AlignJustify,
     Highlighter,
     List, ListOrdered,
     Code, Link as LinkIcon, CheckSquare, Minus,
@@ -214,6 +214,13 @@ const MenuBar = ({ editor }: { editor: any }) => {
                     title="Align Right"
                 >
                     <AlignRight className="h-4 w-4" />
+                </ToolbarButton>
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+                    isActive={editor.isActive({ textAlign: 'justify' })}
+                    title="Align Justify"
+                >
+                    <AlignJustify className="h-4 w-4" />
                 </ToolbarButton>
             </div>
 

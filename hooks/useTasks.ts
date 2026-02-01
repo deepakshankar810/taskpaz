@@ -59,7 +59,29 @@ export function useTasks(userId: string | undefined | null) {
             return;
         }
 
-        setLoading(true);
+        // 1. Try to load from cache IMMEDIATELY when we have a userId
+        // This covers the case where the hook mounted before auth was ready
+        const cached = localStorage.getItem(`tasks_${userId}`);
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (parsed && parsed.length > 0) {
+                    const hydrated = parsed.map((t: any) => ({
+                        ...t,
+                        createdAt: new Date(t.createdAt),
+                        updatedAt: new Date(t.updatedAt),
+                        dueDate: t.dueDate ? new Date(t.dueDate) : undefined,
+                        completedAt: t.completedAt ? new Date(t.completedAt) : undefined,
+                    }));
+                    setTasks(hydrated);
+                    setLoading(false); // Show content immediately
+                }
+            } catch (e) {
+                // Ignore cache errors
+            }
+        } else {
+            setLoading(true);
+        }
 
         // Create query
         const tasksRef = collection(db, 'tasks');
@@ -120,6 +142,7 @@ export function useTasks(userId: string | undefined | null) {
 
     // Optimistic state
     const [optimisticTasks, setOptimisticTasks] = useState<Task[]>([]);
+    const [optimisticUpdates, setOptimisticUpdates] = useState<Record<string, Partial<Task>>>({});
 
     const addOptimisticTask = (task: Task) => {
         setOptimisticTasks(prev => [task, ...prev]);
@@ -127,6 +150,13 @@ export function useTasks(userId: string | undefined | null) {
 
     const removeOptimisticTask = (taskId: string) => {
         setOptimisticTasks(prev => prev.filter(t => t.id !== taskId));
+    };
+
+    const optimisticUpdateTask = (taskId: string, updates: Partial<Task>) => {
+        setOptimisticUpdates(prev => ({
+            ...prev,
+            [taskId]: { ...(prev[taskId] || {}), ...updates }
+        }));
     };
 
     // Derived state: Combined and sorted tasks
@@ -137,12 +167,20 @@ export function useTasks(userId: string | undefined | null) {
             index === self.findIndex((t) => t.id === task.id)
         );
 
-        return unique.sort((a, b) => {
+        // Apply optimistic updates
+        const updated = unique.map(task => {
+            if (optimisticUpdates[task.id]) {
+                return { ...task, ...optimisticUpdates[task.id] };
+            }
+            return task;
+        });
+
+        return updated.sort((a, b) => {
             const timeA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
             const timeB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
             return (timeB || 0) - (timeA || 0);
         });
-    }, [tasks, optimisticTasks]);
+    }, [tasks, optimisticTasks, optimisticUpdates]);
 
     // Derived state: Statistics
     const stats = useMemo(() => {
@@ -170,5 +208,5 @@ export function useTasks(userId: string | undefined | null) {
         return s;
     }, [allTasks]);
 
-    return { tasks: allTasks, stats, loading, error, addOptimisticTask, removeOptimisticTask };
+    return { tasks: allTasks, stats, loading, error, addOptimisticTask, removeOptimisticTask, optimisticUpdateTask };
 }

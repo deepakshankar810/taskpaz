@@ -19,6 +19,7 @@ interface TasksContextType {
     error: Error | null;
     addOptimisticTask: (task: Task) => void;
     removeOptimisticTask: (taskId: string) => void;
+    optimisticUpdateTask: (taskId: string, updates: Partial<Task>) => void;
 }
 
 const TasksContext = createContext<TasksContextType | undefined>(undefined);
