@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity } from 'lucide-react';
 import { useTasksContext } from '@/components/providers/TasksProvider';
+import { useFinance } from '@/hooks/useFinance';
+import { useAuth } from '@/components/providers/AuthProvider';
 import {
   BarChart,
   Bar,
@@ -15,20 +17,30 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend
+  Legend,
+  AreaChart,
+  Area
 } from 'recharts';
-import { startOfDay, subDays, format, isSameDay } from 'date-fns';
+import { startOfDay, subDays, format, isSameDay, startOfMonth, subMonths, isSameMonth } from 'date-fns';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+const PRIORITY_COLORS = {
+  high: '#ef4444',   // Red-500
+  medium: '#eab308', // Yellow-500
+  low: '#3b82f6',    // Blue-500
+  urgent: '#7c3aed'  // Violet-600
+};
 
 export default function AnalyticsPage() {
+  const { user } = useAuth();
   const { tasks, stats } = useTasksContext();
+  const { transactions } = useFinance(user?.uid);
 
   // 1. Efficiency (Completion Rate)
   const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
 
-  // 2. Trend Data (Last 7 Days)
-  const trendData = useMemo(() => {
+  // 2. Task Trend Data (Last 7 Days)
+  const taskTrendData = useMemo(() => {
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const d = subDays(new Date(), 6 - i);
       return startOfDay(d);
@@ -59,6 +71,43 @@ export default function AnalyticsPage() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [tasks]);
 
+  // 4. Priority Data
+  const priorityData = useMemo(() => {
+    const counts: Record<string, number> = { high: 0, medium: 0, low: 0, urgent: 0 };
+    tasks.forEach(t => {
+      const p = t.priority || 'low';
+      if (counts[p] !== undefined) counts[p]++;
+    });
+    return Object.entries(counts)
+      .filter(([_, value]) => value > 0)
+      .map(([name, value]) => ({ name, value }));
+  }, [tasks]);
+
+  // 5. Financial Trend (Last 6 Months)
+  const financialTrendData = useMemo(() => {
+    const last6Months = Array.from({ length: 6 }, (_, i) => {
+      const d = subMonths(new Date(), 5 - i);
+      return startOfMonth(d);
+    });
+
+    return last6Months.map(date => {
+      const monthlyTransactions = transactions.filter(t => isSameMonth(new Date(t.date), date));
+      const income = monthlyTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      const expense = monthlyTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      return {
+        name: format(date, 'MMM'),
+        income,
+        expense
+      };
+    });
+  }, [transactions]);
+
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -78,39 +127,91 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Bar Chart */}
+      {/* Row 1: Task Trends & Priority */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+        {/* Task Trend Bar Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Task Completion Trend (Last 7 Days)</CardTitle>
+            <CardTitle>Task Completion (Last 7 Days)</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trendData}>
+              <BarChart data={taskTrendData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 12, fill: '#888888' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 12, fill: '#888888' }}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  cursor={{ fill: 'transparent' }}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#888888' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: '#888888' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                 <Bar dataKey="completed" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Pie Chart */}
+        {/* Priority Donut Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Task Priority Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px] w-full mt-4">
+            {priorityData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-slate-400">No tasks found</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={priorityData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {priorityData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PRIORITY_COLORS[entry.name as keyof typeof PRIORITY_COLORS] || COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 2: Financial Trend & Categories */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+        {/* Financial Area Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Financial Health (Last 6 Months)</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px] w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={financialTrendData}>
+                <defs>
+                  <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#888888' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: '#888888' }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Area type="monotone" dataKey="income" stroke="#22c55e" fillOpacity={1} fill="url(#colorIncome)" />
+                <Area type="monotone" dataKey="expense" stroke="#ef4444" fillOpacity={1} fill="url(#colorExpense)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Category Pie Chart */}
         <Card>
           <CardHeader>
             <CardTitle>Category Distribution</CardTitle>
@@ -127,9 +228,7 @@ export default function AnalyticsPage() {
                     data={categoryData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
                     outerRadius={80}
-                    paddingAngle={5}
                     dataKey="value"
                   >
                     {categoryData.map((entry, index) => (
