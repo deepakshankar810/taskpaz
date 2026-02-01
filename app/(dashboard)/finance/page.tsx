@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useFinance } from '@/hooks/useFinance';
 import { addTransaction, deleteTransaction } from '@/lib/db/finance';
@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Wallet, TrendingUp, TrendingDown, Plus, Trash2, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
 import { CreateTransactionInput, TransactionType } from '@/lib/types';
 import { toast } from 'sonner';
@@ -25,8 +26,9 @@ export default function FinancePage() {
   const { user } = useAuth();
   const { transactions, stats, loading } = useFinance(user?.uid);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [currency, setCurrency] = useState(''); // Default empty to load from storage
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currency, setCurrency] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
 
   // Load currency from local storage on mount
   useState(() => {
@@ -48,38 +50,44 @@ export default function FinancePage() {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
 
-  const handleAddTransaction = async (e: React.FormEvent) => {
+  const handleAddTransaction = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !amount || !category) return;
 
-    // Fire and forget for UI - Firestore listener will update the list
+    // Close and clear immediately for instant feel
     setIsAddOpen(false);
 
-    try {
-      const data: CreateTransactionInput = {
-        amount: parseFloat(amount),
-        type,
-        category,
-        description,
-        date: new Date(),
-      };
+    const data: CreateTransactionInput = {
+      amount: parseFloat(amount),
+      type,
+      category,
+      description,
+      date: new Date(),
+    };
 
-      // Send to server in background
-      addTransaction(user.uid, data).then(() => {
+    // Background write
+    addTransaction(user.uid, data)
+      .then(() => {
         toast.success('Transaction added');
-      }).catch(err => {
+      })
+      .catch(err => {
         console.error('Error adding transaction:', err);
         toast.error('Failed to add transaction');
       });
 
-      // Clear form immediately
-      setAmount('');
-      setDescription('');
-      setCategory('');
-    } catch (error) {
-      console.error(error);
-    }
+    // Clear form
+    setAmount('');
+    setDescription('');
+    setCategory('');
   };
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      const matchesSearch = (t.description || t.category).toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = filterCategory === 'all' || t.category === filterCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [transactions, searchQuery, filterCategory]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this transaction?')) return;
@@ -192,8 +200,8 @@ export default function FinancePage() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? 'Saving...' : 'Save Transaction'}
+                <Button type="submit" className="w-full">
+                  Save Transaction
                 </Button>
               </form>
             </DialogContent>
@@ -201,7 +209,7 @@ export default function FinancePage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Balance</CardTitle>
@@ -231,11 +239,49 @@ export default function FinancePage() {
             <div className="text-2xl font-bold text-red-600">{formatCurrency(stats.expenses)}</div>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Saving Rate</CardTitle>
+            <ArrowUpRight className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.income > 0 ? Math.round(((stats.income - stats.expenses) / stats.income) * 100) : 0}%
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Recent Transactions</CardTitle>
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <CardTitle>Transactions</CardTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                placeholder="Search description..."
+                className="w-full md:w-64"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger className="w-full md:w-40">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="Food">Food</SelectItem>
+                  <SelectItem value="Transport">Transport</SelectItem>
+                  <SelectItem value="Shopping">Shopping</SelectItem>
+                  <SelectItem value="Bills">Bills</SelectItem>
+                  <SelectItem value="Entertainment">Entertainment</SelectItem>
+                  <SelectItem value="Salary">Salary</SelectItem>
+                  <SelectItem value="Freelance">Freelance</SelectItem>
+                  <SelectItem value="Investment">Investment</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {transactions.length === 0 ? (
@@ -246,29 +292,36 @@ export default function FinancePage() {
               <p className="text-slate-500">No transactions yet. Add one to see it here.</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {transactions.map(t => (
-                <div key={t.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30'}`}>
-                      {t.type === 'income' ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+            <ScrollArea className="h-[500px] pr-4 -mr-4">
+              <div className="space-y-4">
+                {filteredTransactions.map(t => (
+                  <div key={t.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30'}`}>
+                        {t.type === 'income' ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+                      </div>
+                      <div>
+                        <p className="font-medium">{t.description || t.category}</p>
+                        <p className="text-xs text-slate-500">{t.category} • {toDate(t.date)?.toLocaleDateString()}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{t.description || t.category}</p>
-                      <p className="text-xs text-slate-500">{t.category} • {toDate(t.date)?.toLocaleDateString()}</p>
+                    <div className="flex items-center gap-4">
+                      <span className={`font-bold ${t.type === 'income' ? 'text-green-600' : 'text-red-900 dark:text-red-400'}`}>
+                        {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                      </span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => handleDelete(t.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className={`font-bold ${t.type === 'income' ? 'text-green-600' : 'text-red-900 dark:text-red-400'}`}>
-                      {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
-                    </span>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => handleDelete(t.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                ))}
+                {filteredTransactions.length === 0 && searchQuery && (
+                  <div className="text-center py-8 text-slate-500">
+                    No transactions match your search.
                   </div>
-                </div>
-              ))}
-            </div>
+                )}
+              </div>
+            </ScrollArea>
           )}
         </CardContent>
       </Card>
