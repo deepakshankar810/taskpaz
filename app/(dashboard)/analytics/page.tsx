@@ -161,12 +161,12 @@ export default function AnalyticsPage() {
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 p-6 md:p-10 lg:p-14">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Analytics</h1>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Efficiency Rate</CardTitle>
@@ -180,7 +180,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Row 1: Task Trends & Priority */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-2">
         {/* Task Trend Bar Chart */}
         <Card>
           <CardHeader>
@@ -239,7 +239,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Row 2: Tasks vs Financial Overview */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-2">
         {/* Category Pie Chart */}
         <Card>
           <CardHeader>
@@ -307,7 +307,7 @@ export default function AnalyticsPage() {
         <p className="text-sm text-slate-500">Breakdown for {format(new Date(), 'MMMM yyyy')}</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Expense Breakdown</CardTitle>

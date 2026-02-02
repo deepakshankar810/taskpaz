@@ -55,26 +55,6 @@ export default function ProjectPage({ params }: { params: any }) {
         setHasUnsavedChanges(hasChanges);
     }, [name, content, isEditing]);
 
-    // We don't block on 'loading' anymore because we have instant-load cache
-    if (!project && loading) return (
-        <div className="space-y-6 animate-pulse p-4">
-            <div className="flex items-center gap-4">
-                <div className="h-10 w-10 bg-slate-200 dark:bg-slate-800 rounded" />
-                <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800 rounded" />
-            </div>
-            <div className="h-[500px] w-full bg-slate-100 dark:bg-slate-900 rounded-lg" />
-        </div>
-    );
-
-    if (!project) return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-            <h1 className="text-2xl font-bold">Project not found</h1>
-            <Link href="/projects">
-                <Button>Back to Projects</Button>
-            </Link>
-        </div>
-    );
-
     // ULTRA-FAST Auto-save: Fire-and-forget with short debounce
     useEffect(() => {
         if (!project || !isEditing) return;
@@ -107,53 +87,80 @@ export default function ProjectPage({ params }: { params: any }) {
         setHasUnsavedChanges(false);
     };
 
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Link href="/projects">
-                        <Button variant="ghost" size="icon">
-                            <ChevronLeft className="h-5 w-5" />
-                        </Button>
-                    </Link>
-                    <div
-                        className="h-4 w-4 rounded-full"
-                        style={{ backgroundColor: project.color }}
-                    />
-                    {isEditing ? (
-                        <Input
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="text-xl font-bold h-9 w-64 border-indigo-200 focus:border-indigo-500"
-                            placeholder="Project Name"
-                        />
-                    ) : (
-                        <h1 className="text-2xl font-bold">{project.name}</h1>
-                    )}
-                </div>
+    // --- Conditional Returns MUST come after all hooks ---
 
-                <div className="flex items-center gap-2">
-                    <div className="text-xs text-slate-400 mr-2 italic">
-                        {hasUnsavedChanges ? 'Typing...' : 'Saved'}
+    // We don't block on 'loading' anymore because we have instant-load cache
+    if (!project && loading) return (
+        <div className="space-y-6 animate-pulse p-4">
+            <div className="flex items-center gap-4">
+                <div className="h-10 w-10 bg-slate-200 dark:bg-slate-800 rounded" />
+                <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800 rounded" />
+            </div>
+            <div className="h-[500px] w-full bg-slate-100 dark:bg-slate-900 rounded-lg" />
+        </div>
+    );
+
+    if (!project) return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+            <h1 className="text-2xl font-bold">Project not found</h1>
+            <Link href="/projects">
+                <Button>Back to Projects</Button>
+            </Link>
+        </div>
+    );
+
+    return (
+        <div className="flex flex-col min-h-full">
+            <div className="sticky top-0 z-20 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md py-4 border-b border-slate-200/50 dark:border-slate-800/50 px-6 md:px-10 lg:px-14">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Link href="/projects">
+                            <Button variant="ghost" size="icon">
+                                <ChevronLeft className="h-5 w-5" />
+                            </Button>
+                        </Link>
+                        <div
+                            className="h-4 w-4 rounded-full"
+                            style={{ backgroundColor: project.color }}
+                        />
+                        {isEditing ? (
+                            <Input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="text-xl font-bold h-9 w-64 border-indigo-200 focus:border-indigo-500"
+                                placeholder="Project Name"
+                            />
+                        ) : (
+                            <h1 className="text-2xl font-bold">{project.name}</h1>
+                        )}
                     </div>
-                    {isEditing ? (
-                        <Button onClick={handleFinishEditing} className="bg-indigo-600 hover:bg-indigo-700">
-                            <X className="mr-2 h-4 w-4" /> Stop Editing
-                        </Button>
-                    ) : (
-                        <Button variant="outline" onClick={() => setIsEditing(true)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Edit Content
-                        </Button>
-                    )}
+
+                    <div className="flex items-center gap-2">
+                        <div className="text-xs text-slate-400 mr-2 italic">
+                            {hasUnsavedChanges ? 'Typing...' : 'Saved'}
+                        </div>
+                        {isEditing ? (
+                            <Button onClick={handleFinishEditing} className="bg-indigo-600 hover:bg-indigo-700">
+                                <X className="mr-2 h-4 w-4" /> Stop Editing
+                            </Button>
+                        ) : (
+                            <Button variant="outline" onClick={() => setIsEditing(true)}>
+                                <Pencil className="mr-2 h-4 w-4" /> Edit Content
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm min-h-[600px] flex flex-col">
-                <Editor
-                    content={content}
-                    onChange={setContent}
-                    editable={isEditing}
-                />
+            <div className="flex-1 p-6 md:p-10 lg:p-14 space-y-6">
+                <div className="bg-white dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm min-h-[600px] flex flex-col">
+                    <Editor
+                        content={content}
+                        onChange={setContent}
+                        editable={isEditing}
+                        stickyOffset="73px"
+                    />
+                </div>
             </div>
         </div>
     );

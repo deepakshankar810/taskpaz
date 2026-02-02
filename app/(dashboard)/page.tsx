@@ -79,7 +79,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-12 p-6 md:p-10 lg:p-14">
       {/* Greeting */}
       <div>
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -91,7 +91,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Tasks Pending"
           value={taskStats?.pending || 0}
@@ -121,7 +121,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-10 md:grid-cols-2">
 
         {/* Recent Tasks */}
         <Card className="h-full">

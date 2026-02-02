@@ -19,6 +19,7 @@ import { ProjectForm } from '@/components/project/ProjectForm';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { toDate } from '@/lib/utils';
 
 export default function ProjectsPage() {
   const { user } = useAuth();
@@ -55,7 +56,7 @@ export default function ProjectsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 p-6 md:p-10 lg:p-14">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Projects</h1>
         <Dialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen}>
@@ -73,7 +74,7 @@ export default function ProjectsPage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {loading ? (
           <>
             <Skeleton className="h-40 w-full" />
@@ -128,7 +129,7 @@ export default function ProjectsPage() {
               </CardHeader>
               <CardFooter className="pt-0">
                 <div className="text-xs text-slate-400">
-                  Created {project.createdAt?.toLocaleDateString()}
+                  Created {toDate(project.createdAt)?.toLocaleDateString() || 'Recently'}
                 </div>
               </CardFooter>
             </Card>

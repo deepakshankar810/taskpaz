@@ -170,7 +170,7 @@ export default function FinancePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-12 p-6 md:p-10 lg:p-14">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Finance Tracker</h1>
@@ -287,7 +287,7 @@ export default function FinancePage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Balance</CardTitle>
@@ -330,7 +330,7 @@ export default function FinancePage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
         {user && <SubscriptionManager subscriptions={subscriptions} userId={user.uid} currency={currency} />}
         {user && <SavingsGoals goals={savingsGoals} userId={user.uid} currency={currency} />}
       </div>

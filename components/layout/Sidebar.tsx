@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { signOut } from '@/lib/auth';
@@ -38,7 +39,16 @@ export function Sidebar() {
     <div className="flex h-full w-64 flex-col border-r bg-white dark:bg-slate-950">
       {/* Header */}
       <div className="flex h-16 items-center border-b px-6">
-        <h1 className="text-xl font-bold text-blue-600 italic tracking-tighter">Taskpaz</h1>
+        <Link href="/" className="flex items-center gap-3">
+          <Image
+            src="/logo.png"
+            alt="Taskpaz"
+            width={32}
+            height={32}
+            className="h-8 w-8 object-contain"
+          />
+          <span className="text-xl font-bold text-blue-600 italic tracking-tighter">Taskpaz</span>
+        </Link>
       </div>
 
       {/* Nav Links */}

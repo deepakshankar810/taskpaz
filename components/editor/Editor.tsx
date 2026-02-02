@@ -82,9 +82,10 @@ interface EditorProps {
     content: string;
     onChange: (html: string) => void;
     editable?: boolean;
+    stickyOffset?: string;
 }
 
-const MenuBar = ({ editor }: { editor: any }) => {
+const MenuBar = ({ editor, stickyOffset = '0px' }: { editor: any, stickyOffset?: string }) => {
     if (!editor) {
         return null;
     }
@@ -116,7 +117,10 @@ const MenuBar = ({ editor }: { editor: any }) => {
     const currentFontSize = parseInt(editor.getAttributes('textStyle').fontSize || '16');
 
     return (
-        <div className="border-b bg-white dark:bg-slate-950 p-2 flex flex-wrap items-center gap-0.5 sticky top-0 z-30 shadow-sm border-slate-100 dark:border-slate-800 rounded-t-lg">
+        <div
+            className="border-b bg-white dark:bg-slate-950 p-2 flex flex-wrap items-center gap-0.5 sticky z-30 shadow-sm border-slate-100 dark:border-slate-800 rounded-t-lg transition-all"
+            style={{ top: stickyOffset }}
+        >
             {/* History Group */}
             <div className="flex items-center gap-0.5">
                 <ToolbarButton
@@ -276,7 +280,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
     );
 };
 
-export default function Editor({ content, onChange, editable = true }: EditorProps) {
+export default function Editor({ content, onChange, editable = true, stickyOffset = '0px' }: EditorProps) {
     const editor = useEditor({
         immediatelyRender: false,
         extensions: [
@@ -355,7 +359,7 @@ export default function Editor({ content, onChange, editable = true }: EditorPro
 
     return (
         <div className={`flex flex-col h-full rounded-lg ${editable ? 'bg-white dark:bg-slate-950' : ''}`}>
-            {editable && <MenuBar editor={editor} />}
+            {editable && <MenuBar editor={editor} stickyOffset={stickyOffset} />}
             <div className={`flex-1 overflow-auto ${editable ? 'p-2' : ''}`}>
                 <EditorContent
                     editor={editor}

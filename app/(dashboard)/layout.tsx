@@ -63,7 +63,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 relative">
+        <main className="flex-1 overflow-auto relative">
           <ProjectsProvider>
             <TasksProvider>
               {/* Ensure children render instantly within the pre-fetched layout */}

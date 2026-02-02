@@ -163,7 +163,7 @@ function TasksContent() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 md:p-10 lg:p-14">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Tasks</h1>
 
@@ -222,7 +222,7 @@ function TasksContent() {
 
         {/* LIST VIEW */}
         <TabsContent value="list" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {loading ? (
               Array(6).fill(0).map((_, i) => <TaskSkeleton key={i} />)
             ) : tasks.length === 0 ? (

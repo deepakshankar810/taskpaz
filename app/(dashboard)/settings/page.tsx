@@ -48,7 +48,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-10 max-w-4xl p-6 md:p-10 lg:p-14">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Settings</h1>
       </div>
