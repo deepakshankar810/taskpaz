@@ -17,6 +17,7 @@ import OrderedList from '@tiptap/extension-ordered-list';
 import ListItem from '@tiptap/extension-list-item';
 import { common, createLowlight } from 'lowlight';
 import { Button } from '@/components/ui/button';
+import { useEffect } from 'react';
 import {
     Bold, Italic, Underline as UnderlineIcon,
     AlignLeft, AlignCenter, AlignRight, AlignJustify,
@@ -25,7 +26,6 @@ import {
     Code, Link as LinkIcon, CheckSquare, Minus,
     Undo, Redo, Minus as MinusIcon, Plus as PlusIcon
 } from 'lucide-react';
-import { useEffect } from 'react';
 
 // Add prism styles for code highlights
 import 'highlight.js/styles/github-dark.css';
@@ -273,7 +273,7 @@ const MenuBar = ({ editor, stickyOffset = '0px' }: { editor: any, stickyOffset?:
                     onClick={() => editor.chain().focus().setHorizontalRule().run()}
                     title="Horizontal Divider"
                 >
-                    <Minus className="h-4 w-4" />
+                    <MinusIcon className="h-4 w-4" />
                 </ToolbarButton>
             </div>
         </div>

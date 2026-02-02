@@ -1,6 +1,6 @@
 # juTask
 
-**juTask** is a modern, AI-powered productivity platform designed to help you organize your life with ease. From task management to finance tracking, juTask provides a unified dashboard to keep you on track.
+**juTask** is a modern productivity platform designed to help you organize your life with ease. From task management to finance tracking, juTask provides a unified dashboard to keep you on track.
 
 ## Features
 
@@ -9,7 +9,6 @@
 - 📅 **Calendar**: Visualize your schedule and deadlines.
 - 📁 **Projects**: Group tasks into projects for better organization.
 - 💰 **Finance**: Track your expenses and manage your budget.
-- 🧠 **AI-Powered**: Smart task analysis and organization suggestions.
 
 ## Tech Stack
 

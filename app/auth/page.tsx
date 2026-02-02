@@ -49,7 +49,7 @@ export default function AuthPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-black tracking-tighter italic text-blue-600">Taskpaz</CardTitle>
           <CardDescription>
-            Boost your productivity with AI-powered task management
+            Boost your productivity with smart task management
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
