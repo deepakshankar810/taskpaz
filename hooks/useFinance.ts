@@ -84,20 +84,44 @@ export function useFinance(userId: string | undefined | null) {
 
         fetchFinanceData();
 
-        // Real-time subscriptions
+        // Real-time incremental updates
         const transChannel = supabase
             .channel(`finance_trans_${userId}`)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${userId}` }, fetchFinanceData)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${userId}` }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    setTransactions(prev => [docToTransaction(payload.new), ...prev]);
+                } else if (payload.eventType === 'UPDATE') {
+                    setTransactions(prev => prev.map(t => t.id === payload.new.id ? docToTransaction(payload.new) : t));
+                } else if (payload.eventType === 'DELETE') {
+                    setTransactions(prev => prev.filter(t => t.id === payload.old.id));
+                }
+            })
             .subscribe();
 
         const subChannel = supabase
             .channel(`finance_sub_${userId}`)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions', filter: `user_id=eq.${userId}` }, fetchFinanceData)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions', filter: `user_id=eq.${userId}` }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    setSubscriptions(prev => [docToSubscription(payload.new), ...prev]);
+                } else if (payload.eventType === 'UPDATE') {
+                    setSubscriptions(prev => prev.map(s => s.id === payload.new.id ? docToSubscription(payload.new) : s));
+                } else if (payload.eventType === 'DELETE') {
+                    setSubscriptions(prev => prev.filter(s => s.id === payload.old.id));
+                }
+            })
             .subscribe();
 
         const goalChannel = supabase
             .channel(`finance_goal_${userId}`)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'savings_goals', filter: `user_id=eq.${userId}` }, fetchFinanceData)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'savings_goals', filter: `user_id=eq.${userId}` }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    setSavingsGoals(prev => [docToSavingsGoal(payload.new), ...prev]);
+                } else if (payload.eventType === 'UPDATE') {
+                    setSavingsGoals(prev => prev.map(g => g.id === payload.new.id ? docToSavingsGoal(payload.new) : g));
+                } else if (payload.eventType === 'DELETE') {
+                    setSavingsGoals(prev => prev.filter(g => g.id === payload.old.id));
+                }
+            })
             .subscribe();
 
         return () => {

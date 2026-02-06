@@ -74,7 +74,7 @@ export function useTasks(userId: string | undefined | null) {
 
         fetchTasks();
 
-        // Real-time subscription
+        // Real-time incremental updates
         const channel = supabase
             .channel(`tasks_${userId}`)
             .on(
@@ -85,8 +85,39 @@ export function useTasks(userId: string | undefined | null) {
                     table: 'tasks',
                     filter: `user_id=eq.${userId}`,
                 },
-                () => {
-                    fetchTasks();
+                (payload) => {
+                    if (payload.eventType === 'INSERT') {
+                        const newTask = {
+                            id: payload.new.id,
+                            userId: payload.new.user_id,
+                            title: payload.new.title,
+                            description: payload.new.description,
+                            status: payload.new.status,
+                            priority: payload.new.priority,
+                            category: payload.new.category,
+                            dueDate: payload.new.due_date ? new Date(payload.new.due_date) : undefined,
+                            projectId: payload.new.project_id,
+                            completedAt: payload.new.completed_at ? new Date(payload.new.completed_at) : undefined,
+                            createdAt: new Date(payload.new.created_at),
+                            updatedAt: new Date(payload.new.updated_at),
+                        } as Task;
+                        setTasks(prev => [newTask, ...prev]);
+                    } else if (payload.eventType === 'UPDATE') {
+                        setTasks(prev => prev.map(t => t.id === payload.new.id ? {
+                            ...t,
+                            title: payload.new.title,
+                            description: payload.new.description,
+                            status: payload.new.status,
+                            priority: payload.new.priority,
+                            category: payload.new.category,
+                            dueDate: payload.new.due_date ? new Date(payload.new.due_date) : undefined,
+                            projectId: payload.new.project_id,
+                            completedAt: payload.new.completed_at ? new Date(payload.new.completed_at) : undefined,
+                            updatedAt: new Date(payload.new.updated_at),
+                        } : t));
+                    } else if (payload.eventType === 'DELETE') {
+                        setTasks(prev => prev.filter(t => t.id === payload.old.id));
+                    }
                 }
             )
             .subscribe();

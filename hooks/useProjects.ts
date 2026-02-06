@@ -60,7 +60,7 @@ export function useProjects(userId: string | undefined) {
 
         fetchProjects();
 
-        // Real-time subscription
+        // Real-time incremental updates
         const channel = supabase
             .channel(`projects_${userId}`)
             .on(
@@ -71,8 +71,31 @@ export function useProjects(userId: string | undefined) {
                     table: 'projects',
                     filter: `user_id=eq.${userId}`,
                 },
-                () => {
-                    fetchProjects();
+                (payload) => {
+                    if (payload.eventType === 'INSERT') {
+                        const newProject = {
+                            id: payload.new.id,
+                            userId: payload.new.user_id,
+                            name: payload.new.name,
+                            description: payload.new.description,
+                            content: payload.new.content,
+                            color: payload.new.color,
+                            createdAt: new Date(payload.new.created_at),
+                            updatedAt: new Date(payload.new.updated_at),
+                        } as Project;
+                        setProjects(prev => [newProject, ...prev]);
+                    } else if (payload.eventType === 'UPDATE') {
+                        setProjects(prev => prev.map(p => p.id === payload.new.id ? {
+                            ...p,
+                            name: payload.new.name,
+                            description: payload.new.description,
+                            content: payload.new.content,
+                            color: payload.new.color,
+                            updatedAt: new Date(payload.new.updated_at),
+                        } : p));
+                    } else if (payload.eventType === 'DELETE') {
+                        setProjects(prev => prev.filter(p => p.id === payload.old.id));
+                    }
                 }
             )
             .subscribe();
