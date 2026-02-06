@@ -15,13 +15,40 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize from cache for instant auth
+  const [user, setUser] = useState<FirebaseUser | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('auth_user');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(!user); // If we have cached user, don't show loading
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
+
+      // Cache auth state
+      if (typeof window !== 'undefined') {
+        if (currentUser) {
+          localStorage.setItem('auth_user', JSON.stringify({
+            uid: currentUser.uid,
+            email: currentUser.email,
+            displayName: currentUser.displayName,
+            photoURL: currentUser.photoURL,
+          }));
+        } else {
+          localStorage.removeItem('auth_user');
+        }
+      }
     });
 
     return () => unsubscribe();

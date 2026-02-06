@@ -189,7 +189,7 @@ function TasksContent() {
               defaultValues={{
                 // If in calendar mode, pre-fill the selected date
                 dueDate: activeTab === 'calendar' && date
-                  ? date.toISOString().split('T')[0]
+                  ? date.toLocaleDateString('en-CA')
                   : undefined
               }}
             />

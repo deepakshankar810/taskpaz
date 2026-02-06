@@ -5,7 +5,6 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { getUserProfile } from '@/lib/auth';
 import { useTasksContext } from '@/components/providers/TasksProvider';
 import { useProjectsContext } from '@/components/providers/ProjectsProvider';
-import { useFinance } from '@/hooks/useFinance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, CheckCircle2, Clock, TrendingUp, Folder, Wallet } from 'lucide-react';
@@ -22,7 +21,6 @@ export default function DashboardPage() {
   // Data Hooks
   const { tasks, stats: taskStats, loading: loadingTasks } = useTasksContext();
   const { projects, loading: loadingProjects } = useProjectsContext();
-  const { stats: financeStats, loading: loadingFinance } = useFinance(user?.uid);
 
   // Computed Data
   const todaysTasks = tasks.filter(t =>
@@ -99,24 +97,16 @@ export default function DashboardPage() {
           loading={loadingTasks}
         />
         <StatsCard
+          title="Completed Tasks"
+          value={taskStats?.completed || 0}
+          icon={<CheckCircle2 className="text-green-500" />}
+          loading={loadingTasks}
+        />
+        <StatsCard
           title="Total Projects"
           value={projects.length}
           icon={<Folder className="text-blue-500" />}
           loading={loadingProjects}
-        />
-        <StatsCard
-          title="Total Balance"
-          value={formatCurrency(financeStats?.balance || 0)}
-          icon={<Wallet className="text-green-500" />}
-          loading={loadingFinance}
-          isCurrency
-        />
-        <StatsCard
-          title="Net Income (Month)"
-          value={formatCurrency(financeStats?.monthlyBalance || 0)}
-          icon={<TrendingUp className="text-emerald-600" />}
-          loading={loadingFinance}
-          isCurrency
         />
       </div>
 

@@ -12,6 +12,7 @@ import { db } from '@/lib/firebase';
 import { Transaction, Subscription, SavingsGoal } from '@/lib/types';
 import { docToTransaction, docToSubscription, docToSavingsGoal } from '@/lib/db/finance';
 import { toDate } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export function useFinance(userId: string | undefined | null) {
     const [transactions, setTransactions] = useState<Transaction[]>(() => {
@@ -78,6 +79,8 @@ export function useFinance(userId: string | undefined | null) {
                 },
                 error: (err) => {
                     console.error('Error fetching transactions:', err);
+                    console.error('User ID:', userId);
+                    toast.error('Failed to sync transactions. Check console for details.');
                     setError(err);
                     setLoading(false);
                 }
@@ -87,6 +90,10 @@ export function useFinance(userId: string | undefined | null) {
                 next: (snapshot) => {
                     const data = snapshot.docs.map(docToSubscription);
                     setSubscriptions(data);
+                },
+                error: (err) => {
+                    console.error('Error fetching subscriptions:', err);
+                    toast.error('Failed to sync subscriptions.');
                 }
             });
 
@@ -94,6 +101,10 @@ export function useFinance(userId: string | undefined | null) {
                 next: (snapshot) => {
                     const data = snapshot.docs.map(docToSavingsGoal);
                     setSavingsGoals(data);
+                },
+                error: (err) => {
+                    console.error('Error fetching savings goals:', err);
+                    toast.error('Failed to sync savings goals.');
                 }
             });
         } catch (err: any) {

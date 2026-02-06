@@ -176,7 +176,7 @@ export default function FinancePage() {
           <h1 className="text-2xl font-bold">Finance Tracker</h1>
           <p className="text-slate-500 text-sm">Managing finances for {format(currentPeriod, 'MMMM yyyy')}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center bg-white dark:bg-slate-900 border rounded-md p-1 mr-2">
             <Button variant="ghost" size="sm" onClick={handlePrevMonth} className="h-8 w-8 p-0">
               &lt;
