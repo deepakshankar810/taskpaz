@@ -77,7 +77,8 @@ export function useFinance(userId: string | undefined | null) {
                 setLoading(false);
             } catch (err: any) {
                 console.error('Error fetching finance data:', err);
-                toast.error('Failed to sync finance data.');
+                const msg = err.message || 'Check console for details';
+                toast.error(`Failed to sync finance data: ${msg}`);
                 setError(err);
                 setLoading(false);
             }
