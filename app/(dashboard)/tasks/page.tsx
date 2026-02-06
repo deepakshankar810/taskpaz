@@ -37,10 +37,13 @@ function TasksContent() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [activeTab, setActiveTab] = useState("list");
 
-  // Check for ?new=true to open modal
+  // Check for ?new=true to open modal or ?view=calendar for tab
   useEffect(() => {
     if (searchParams.get('new') === 'true') {
       setIsNewTaskOpen(true);
+    }
+    if (searchParams.get('view') === 'calendar') {
+      setActiveTab('calendar');
     }
   }, [searchParams]);
 
@@ -214,7 +217,7 @@ function TasksContent() {
         </Dialog>
       </div>
 
-      <Tabs defaultValue="list" className="w-full" onValueChange={setActiveTab}>
+      <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
         <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
           <TabsTrigger value="list">List View</TabsTrigger>
           <TabsTrigger value="calendar">Calendar View</TabsTrigger>

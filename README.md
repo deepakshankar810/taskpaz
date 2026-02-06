@@ -1,21 +1,23 @@
-# juTask
+# Taskpaz
 
-**juTask** is a modern productivity platform designed to help you organize your life with ease. From task management to finance tracking, juTask provides a unified dashboard to keep you on track.
+**Taskpaz** is a premium, high-performance productivity platform designed to help you organize your life with ease. Built with speed and aesthetics in mind, Taskpaz provides a unified dashboard for tasks, projects, and finance tracking.
 
 ## Features
 
-- 🚀 **Dashboard**: A bird's-eye view of your daily tasks and stats.
-- ✅ **Task Management**: Create, categorize, and prioritize tasks.
-- 📅 **Calendar**: Visualize your schedule and deadlines.
-- 📁 **Projects**: Group tasks into projects for better organization.
-- 💰 **Finance**: Track your expenses and manage your budget.
+- 🚀 **Dynamic Dashboard**: A bird's-eye view of your productivity streaks and daily stats.
+- ✅ **Intelligent Tasks**: Create and categorize tasks with instant sync and a full calendar view.
+- 📁 **Project Spaces**: dedicated environments for grouped tasks and collaboration.
+- 💰 **Finance Suite**: Track transactions, manage recurring subscriptions, and set savings goals.
+- 📊 **Visual Analytics**: Interactive charts to visualize your productivity and spending habits.
+- 📱 **Mobile First**: Fully responsive design with a optimized bottom navigation for mobile users.
 
 ## Tech Stack
 
-- **Framework**: [Next.js 15+](https://nextjs.org)
-- **Authentication**: [Supabase Auth](https://supabase.com/docs/guides/auth)
-- **Database**: [Supabase Database (PostgreSQL)](https://supabase.com/docs/guides/database)
+- **Framework**: [Next.js 15+](https://nextjs.org) (App Router + Turbopack)
+- **Database**: [Supabase](https://supabase.com) (PostgreSQL)
+- **Real-time**: Supabase Postgres Changes
 - **Styling**: [Tailwind CSS](https://tailwindcss.com) 4.0
+- **UI Components**: Radix UI + Framer Motion
 - **Icons**: [Lucide React](https://lucide.dev)
 
 ## License
