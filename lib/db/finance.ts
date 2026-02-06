@@ -65,6 +65,7 @@ export const addSubscription = async (userId: string, data: Omit<Subscription, '
             name: data.name,
             amount: data.amount,
             billing_cycle: (data as any).billingCycle || (data as any).billing_cycle,
+            billing_interval: (data as any).billingInterval || 1,
             category: data.category,
             next_billing_date: ((data as any).nextBillingDate || (data as any).next_billing_date).toISOString().split('T')[0],
             active: true,
@@ -81,6 +82,7 @@ export const updateSubscription = async (id: string, data: Partial<Subscription>
     if (data.name) updateData.name = data.name;
     if (data.amount) updateData.amount = data.amount;
     if ((data as any).billingCycle) updateData.billing_cycle = (data as any).billingCycle;
+    if ((data as any).billingInterval) updateData.billing_interval = (data as any).billingInterval;
     if (data.category) updateData.category = data.category;
     if ((data as any).nextBillingDate) updateData.next_billing_date = (data as any).nextBillingDate.toISOString().split('T')[0];
     if (data.active !== undefined) updateData.active = data.active;
@@ -109,6 +111,7 @@ export const docToSubscription = (item: any): Subscription => {
         name: item.name,
         amount: item.amount,
         billingCycle: item.billing_cycle,
+        billingInterval: item.billing_interval || 1,
         category: item.category,
         nextBillingDate: new Date(item.next_billing_date),
         active: item.active,

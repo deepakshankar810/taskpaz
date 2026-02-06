@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
@@ -11,12 +11,21 @@ import { Loader2 } from 'lucide-react';
 import { ProjectsProvider } from '@/components/providers/ProjectsProvider';
 import { TasksProvider } from '@/components/providers/TasksProvider';
 import { FinanceProvider } from '@/components/providers/FinanceProvider';
+import { NotificationProvider } from '@/components/providers/NotificationProvider';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
+
+  // Auto-close sidebar on mobile when navigating
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [pathname, isMobile]);
 
   // Warm up navigation cache for instant feel
   useEffect(() => {
@@ -68,10 +77,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <ProjectsProvider>
             <TasksProvider>
               <FinanceProvider>
-                {/* Ensure children render instantly within the pre-fetched layout */}
-                <div className="animate-in fade-in duration-300">
-                  {children}
-                </div>
+                <NotificationProvider>
+                  {/* Ensure children render instantly within the pre-fetched layout */}
+                  <div className="animate-in fade-in duration-300">
+                    {children}
+                  </div>
+                </NotificationProvider>
               </FinanceProvider>
             </TasksProvider>
           </ProjectsProvider>

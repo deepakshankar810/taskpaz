@@ -92,6 +92,7 @@ export interface Subscription {
   amount: number;
   category: string;
   billingCycle: 'monthly' | 'yearly';
+  billingInterval: number;
   nextBillingDate: Date;
   active: boolean;
   createdAt: Date;

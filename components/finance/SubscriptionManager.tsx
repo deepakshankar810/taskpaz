@@ -29,6 +29,7 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState('');
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+    const [billingInterval, setBillingInterval] = useState('1');
     const [nextBillingDate, setNextBillingDate] = useState('');
 
     const handleAdd = async (e: React.FormEvent) => {
@@ -42,11 +43,13 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
         const currentCategory = category;
         const currentDate = nextBillingDate;
         const currentCycle = billingCycle;
+        const currentInterval = parseInt(billingInterval) || 1;
 
         setName('');
         setAmount('');
         setCategory('');
         setNextBillingDate('');
+        setBillingInterval('1');
 
         const tempId = crypto.randomUUID();
         const optimisticSub = {
@@ -56,6 +59,7 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
             amount: parseFloat(currentAmount),
             category: currentCategory || 'General',
             billingCycle: currentCycle,
+            billingInterval: currentInterval,
             nextBillingDate: new Date(currentDate),
             active: true,
             createdAt: new Date(),
@@ -70,9 +74,10 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                 amount: parseFloat(currentAmount),
                 category: currentCategory || 'General',
                 billingCycle: currentCycle,
+                billingInterval: currentInterval,
                 nextBillingDate: new Date(currentDate),
                 active: true,
-            });
+            } as any);
             toast.success('Subscription added');
         } catch (error) {
             toast.error('Failed to add subscription');
@@ -95,7 +100,10 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
     };
 
     const totalMonthly = subscriptions.reduce((sum, sub) => {
-        const monthlyRate = sub.billingCycle === 'monthly' ? sub.amount : sub.amount / 12;
+        const interval = sub.billingInterval || 1;
+        const monthlyRate = sub.billingCycle === 'monthly'
+            ? sub.amount / interval
+            : sub.amount / (interval * 12);
         return sum + (sub.active ? monthlyRate : 0);
     }, 0);
 
@@ -127,17 +135,27 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                                     <Label>Amount</Label>
                                     <Input type="number" step="0.01" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} required />
                                 </div>
-                                <div className="grid gap-2">
-                                    <Label>Cycle</Label>
-                                    <Select value={billingCycle} onValueChange={(v: any) => setBillingCycle(v)}>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="monthly">Monthly</SelectItem>
-                                            <SelectItem value="yearly">Yearly</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                <div className="grid gap-2 text-xs">
+                                    <Label>Billing Frequency</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            className="w-16"
+                                            value={billingInterval}
+                                            onChange={e => setBillingInterval(e.target.value)}
+                                            required
+                                        />
+                                        <Select value={billingCycle} onValueChange={(v: any) => setBillingCycle(v)}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="monthly">Months</SelectItem>
+                                                <SelectItem value="yearly">Years</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </div>
                             <div className="grid gap-2">
@@ -169,7 +187,9 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                                     <div>
                                         <p className="text-sm font-semibold">{sub.name}</p>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs text-slate-500">{currency}{sub.amount} / {sub.billingCycle}</span>
+                                            <span className="text-xs text-slate-500">
+                                                {currency}{sub.amount} / {sub.billingInterval > 1 ? `${sub.billingInterval} ` : ''}{sub.billingCycle.replace('ly', '')}{sub.billingInterval > 1 ? 's' : ''}
+                                            </span>
                                             <Badge variant="outline" className="h-4 text-[10px] px-1 uppercase">{format(sub.nextBillingDate, 'MMM d')}</Badge>
                                         </div>
                                     </div>
