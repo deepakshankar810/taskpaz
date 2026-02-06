@@ -10,6 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
 import { ProjectsProvider } from '@/components/providers/ProjectsProvider';
 import { TasksProvider } from '@/components/providers/TasksProvider';
+import { FinanceProvider } from '@/components/providers/FinanceProvider';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -66,10 +67,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 overflow-auto relative pb-24 md:pb-0">
           <ProjectsProvider>
             <TasksProvider>
-              {/* Ensure children render instantly within the pre-fetched layout */}
-              <div className="animate-in fade-in duration-300">
-                {children}
-              </div>
+              <FinanceProvider>
+                {/* Ensure children render instantly within the pre-fetched layout */}
+                <div className="animate-in fade-in duration-300">
+                  {children}
+                </div>
+              </FinanceProvider>
             </TasksProvider>
           </ProjectsProvider>
         </main>

@@ -20,13 +20,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
-interface SubscriptionManagerProps {
-    subscriptions: Subscription[];
-    userId: string;
-    currency: string;
-}
+import { useFinanceContext } from '@/components/providers/FinanceProvider';
 
-export function SubscriptionManager({ subscriptions, userId, currency }: SubscriptionManagerProps) {
+export function SubscriptionManager({ subscriptions, userId, currency }: { subscriptions: Subscription[], userId: string, currency: string }) {
+    const { setSubscriptions } = useFinanceContext();
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [name, setName] = useState('');
     const [amount, setAmount] = useState('');
@@ -44,36 +41,56 @@ export function SubscriptionManager({ subscriptions, userId, currency }: Subscri
         const currentAmount = amount;
         const currentCategory = category;
         const currentDate = nextBillingDate;
+        const currentCycle = billingCycle;
 
         setName('');
         setAmount('');
         setCategory('');
         setNextBillingDate('');
 
+        const tempId = crypto.randomUUID();
+        const optimisticSub = {
+            id: tempId,
+            userId,
+            name: currentName,
+            amount: parseFloat(currentAmount),
+            category: currentCategory || 'General',
+            billingCycle: currentCycle,
+            nextBillingDate: new Date(currentDate),
+            active: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        } as any;
+
+        setSubscriptions(prev => [optimisticSub, ...prev]);
+
         try {
             await addSubscription(userId, {
                 name: currentName,
                 amount: parseFloat(currentAmount),
                 category: currentCategory || 'General',
-                billingCycle,
+                billingCycle: currentCycle,
                 nextBillingDate: new Date(currentDate),
                 active: true,
             });
             toast.success('Subscription added');
         } catch (error) {
             toast.error('Failed to add subscription');
-            // Re-open if failed? No, usually better to keep it clean or use a more robust form state.
-            // For now, staying consistent with page.tsx.
+            setSubscriptions(prev => prev.filter(s => s.id !== tempId));
         }
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm('Remove this subscription?')) return;
+        const originalSubs = [...subscriptions];
+        setSubscriptions(prev => prev.filter(s => s.id !== id));
+
         try {
             await deleteSubscription(id);
             toast.success('Subscription removed');
         } catch (error) {
             toast.error('Failed to remove');
+            setSubscriptions(originalSubs);
         }
     };
 

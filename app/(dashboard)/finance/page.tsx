@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useFinance } from '@/hooks/useFinance';
+import { useFinanceContext } from '@/components/providers/FinanceProvider';
 import { format, addMonths, subMonths, isSameMonth } from 'date-fns';
 import { addTransaction, deleteTransaction } from '@/lib/db/finance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +27,7 @@ import { SavingsGoals } from '@/components/finance/SavingsGoals';
 
 export default function FinancePage() {
   const { user } = useAuth();
-  const { transactions, subscriptions, savingsGoals, stats, loading } = useFinance(user?.id);
+  const { transactions, subscriptions, savingsGoals, stats, loading, setTransactions } = useFinanceContext();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [currency, setCurrency] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,6 +78,18 @@ export default function FinancePage() {
       date: transactionDate,
     };
 
+    // Optimistic update
+    const tempId = crypto.randomUUID();
+    const optimisticTrans = {
+      id: tempId,
+      userId: user.id,
+      ...data,
+      amount: data.amount, // Ensure it's a number
+      createdAt: new Date(),
+    } as any;
+
+    setTransactions(prev => [optimisticTrans, ...prev]);
+
     // Background write
     addTransaction(user.id, data)
       .then(() => {
@@ -86,6 +98,8 @@ export default function FinancePage() {
       .catch(err => {
         console.error('Error adding transaction:', err);
         toast.error('Failed to add transaction');
+        // Rollback
+        setTransactions(prev => prev.filter(t => t.id !== tempId));
       });
 
     // Clear form
@@ -119,12 +133,21 @@ export default function FinancePage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this transaction?')) return;
+
+    // Save current state for potential rollback
+    const originalTransactions = [...transactions];
+
+    // Optimistic delete
+    setTransactions(prev => prev.filter(t => t.id !== id));
+
     try {
       await deleteTransaction(id);
       toast.success('Transaction deleted');
     } catch (error) {
       console.error('Error deleting transaction:', error);
       toast.error('Failed to delete');
+      // Rollback
+      setTransactions(originalTransactions);
     }
   };
 

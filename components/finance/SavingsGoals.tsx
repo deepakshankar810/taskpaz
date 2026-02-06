@@ -18,13 +18,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
-interface SavingsGoalsProps {
-    goals: SavingsGoal[];
-    userId: string;
-    currency: string;
-}
+import { useFinanceContext } from '@/components/providers/FinanceProvider';
 
-export function SavingsGoals({ goals, userId, currency }: SavingsGoalsProps) {
+export function SavingsGoals({ goals, userId, currency }: { goals: SavingsGoal[], userId: string, currency: string }) {
+    const { setSavingsGoals } = useFinanceContext();
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isDepositOpen, setIsDepositOpen] = useState(false);
     const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
@@ -47,6 +44,21 @@ export function SavingsGoals({ goals, userId, currency }: SavingsGoalsProps) {
         setName('');
         setTarget('');
 
+        const tempId = crypto.randomUUID();
+        const optimisticGoal = {
+            id: tempId,
+            userId,
+            name: currentName,
+            targetAmount: parseFloat(currentTarget),
+            currentAmount: 0,
+            color: currentColor,
+            isCompleted: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        } as any;
+
+        setSavingsGoals(prev => [optimisticGoal, ...prev]);
+
         try {
             await addSavingsGoal(userId, {
                 name: currentName,
@@ -58,6 +70,7 @@ export function SavingsGoals({ goals, userId, currency }: SavingsGoalsProps) {
             toast.success('Goal created');
         } catch (error) {
             toast.error('Failed to create goal');
+            setSavingsGoals(prev => prev.filter(g => g.id !== tempId));
         }
     };
 
@@ -75,6 +88,11 @@ export function SavingsGoals({ goals, userId, currency }: SavingsGoalsProps) {
         const newAmount = goal.currentAmount + parseFloat(amount);
         const isCompleted = newAmount >= goal.targetAmount;
 
+        const originalGoals = [...goals];
+        setSavingsGoals(prev => prev.map(g =>
+            g.id === goal.id ? { ...g, currentAmount: newAmount, isCompleted } : g
+        ));
+
         try {
             await updateSavingsGoal(goal.id, {
                 currentAmount: newAmount,
@@ -83,16 +101,21 @@ export function SavingsGoals({ goals, userId, currency }: SavingsGoalsProps) {
             toast.success('Savings updated!');
         } catch (error) {
             toast.error('Failed to update savings');
+            setSavingsGoals(originalGoals);
         }
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm('Delete this goal?')) return;
+        const originalGoals = [...goals];
+        setSavingsGoals(prev => prev.filter(g => g.id !== id));
+
         try {
             await deleteSavingsGoal(id);
             toast.success('Goal deleted');
         } catch (error) {
             toast.error('Failed to delete');
+            setSavingsGoals(originalGoals);
         }
     };
 

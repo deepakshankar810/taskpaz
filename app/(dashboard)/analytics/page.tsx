@@ -1,10 +1,9 @@
-'use client';
-
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity } from 'lucide-react';
 import { useTasksContext } from '@/components/providers/TasksProvider';
-import { useFinance } from '@/hooks/useFinance';
+import { Transaction } from '@/lib/types';
+import { useFinanceContext } from '@/components/providers/FinanceProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
   BarChart,
@@ -35,8 +34,8 @@ const PRIORITY_COLORS = {
 export default function AnalyticsPage() {
   const { user } = useAuth();
   const { tasks, stats } = useTasksContext();
-  const { transactions } = useFinance(user?.id);
-  const [currency, setCurrency] = useMemo(() => {
+  const { transactions, loading } = useFinanceContext();
+  const [currency] = useMemo(() => {
     if (typeof window !== 'undefined') {
       return [localStorage.getItem('finance_currency') || '$', () => { }];
     }
@@ -106,16 +105,16 @@ export default function AnalyticsPage() {
     });
 
     return last6Months.map(date => {
-      const monthlyTransactions = transactions.filter(t => {
+      const monthlyTransactions = transactions.filter((t: Transaction) => {
         const transDate = toDate(t.date);
         return transDate && isSameMonth(transDate, date);
       });
       const income = monthlyTransactions
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+        .filter((t: Transaction) => t.type === 'income')
+        .reduce((sum: number, t: Transaction) => sum + Number(t.amount), 0);
       const expense = monthlyTransactions
-        .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+        .filter((t: Transaction) => t.type === 'expense')
+        .reduce((sum: number, t: Transaction) => sum + Number(t.amount), 0);
 
       return {
         name: format(date, 'MMM'),
@@ -130,13 +129,13 @@ export default function AnalyticsPage() {
     const categories: Record<string, number> = {};
     const details: Record<string, string[]> = {};
     const now = new Date();
-    const expenses = transactions.filter(t => {
+    const expenses = transactions.filter((t: Transaction) => {
       if (t.type !== 'expense') return false;
       const d = toDate(t.date);
       return d && isSameMonth(d, now);
     });
 
-    expenses.forEach(t => {
+    expenses.forEach((t: Transaction) => {
       const amount = Number(t.amount);
       categories[t.category] = (categories[t.category] || 0) + amount;
 

@@ -40,39 +40,37 @@ export function useFinance(userId: string | undefined | null) {
 
         const fetchFinanceData = async () => {
             try {
-                // Fetch transactions
-                const { data: transData, error: transErr } = await supabase
-                    .from('transactions')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .order('date', { ascending: false });
+                // Parallel fetch for speed
+                const [transRes, subRes, goalRes] = await Promise.all([
+                    supabase
+                        .from('transactions')
+                        .select('*')
+                        .eq('user_id', userId)
+                        .order('date', { ascending: false }),
+                    supabase
+                        .from('subscriptions')
+                        .select('*')
+                        .eq('user_id', userId)
+                        .order('created_at', { ascending: false }),
+                    supabase
+                        .from('savings_goals')
+                        .select('*')
+                        .eq('user_id', userId)
+                        .order('created_at', { ascending: false })
+                ]);
 
-                if (transErr) throw transErr;
-                const mappedTrans = transData.map(docToTransaction);
+                if (transRes.error) throw transRes.error;
+                if (subRes.error) throw subRes.error;
+                if (goalRes.error) throw goalRes.error;
+
+                const mappedTrans = transRes.data.map(docToTransaction);
                 setTransactions(mappedTrans);
                 if (typeof window !== 'undefined') {
                     localStorage.setItem(`finance_${userId}`, JSON.stringify(mappedTrans));
                 }
 
-                // Fetch subscriptions
-                const { data: subData, error: subErr } = await supabase
-                    .from('subscriptions')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: false });
-
-                if (subErr) throw subErr;
-                setSubscriptions(subData.map(docToSubscription));
-
-                // Fetch savings goals
-                const { data: goalData, error: goalErr } = await supabase
-                    .from('savings_goals')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: false });
-
-                if (goalErr) throw goalErr;
-                setSavingsGoals(goalData.map(docToSavingsGoal));
+                setSubscriptions(subRes.data.map(docToSubscription));
+                setSavingsGoals(goalRes.data.map(docToSavingsGoal));
 
                 setLoading(false);
             } catch (err: any) {
@@ -138,5 +136,15 @@ export function useFinance(userId: string | undefined | null) {
         );
     }, [transactions]);
 
-    return { transactions, subscriptions, savingsGoals, stats, loading, error };
+    return {
+        transactions,
+        subscriptions,
+        savingsGoals,
+        stats,
+        loading,
+        error,
+        setTransactions,
+        setSubscriptions,
+        setSavingsGoals
+    };
 }

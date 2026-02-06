@@ -13,8 +13,8 @@
 ## Tech Stack
 
 - **Framework**: [Next.js 15+](https://nextjs.org)
-- **Authentication**: [Firebase Auth](https://firebase.google.com/docs/auth)
-- **Database**: [Cloud Firestore](https://firebase.google.com/docs/firestore)
+- **Authentication**: [Supabase Auth](https://supabase.com/docs/guides/auth)
+- **Database**: [Supabase Database (PostgreSQL)](https://supabase.com/docs/guides/database)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com) 4.0
 - **Icons**: [Lucide React](https://lucide.dev)
 
