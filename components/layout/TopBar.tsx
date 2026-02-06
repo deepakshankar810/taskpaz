@@ -25,6 +25,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const { subscriptions, savingsGoals } = useFinance(user?.id);
   const [readIds, setReadIds] = useState<string[]>([]);
   const [currency, setCurrency] = useState('$');
+  const [mounted, setMounted] = useState(false);
 
   // Load read status and currency from localStorage
   useEffect(() => {
@@ -34,6 +35,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
       const savedCurrency = localStorage.getItem('finance_currency');
       if (savedCurrency) setCurrency(savedCurrency);
+      setMounted(true);
     }
   }, []);
 
@@ -161,69 +163,71 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative group">
-              <Bell className="h-5 w-5 text-slate-500 group-hover:text-blue-500 transition-colors" />
-              {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-950 animate-pulse" />
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-0 shadow-xl border-slate-200 dark:border-slate-800" align="end">
-            <div className="flex items-center justify-between p-4 border-b bg-slate-50/50 dark:bg-slate-900/50">
-              <h4 className="font-semibold text-sm">Notifications</h4>
-              {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto text-xs text-blue-500 p-0 hover:bg-transparent hover:underline"
-                  onClick={markAllRead}
-                >
-                  Mark all read
-                </Button>
-              )}
-            </div>
-            <ScrollArea className="h-[350px]">
-              {notifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-8 text-center">
-                  <Bell className="h-8 w-8 text-slate-200 mb-2" />
-                  <p className="text-sm text-slate-500 font-medium">All caught up!</p>
-                  <p className="text-xs text-slate-400 mt-1">No new notifications for you.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {notifications.map(n => (
-                    <div
-                      key={n.id}
-                      onClick={() => markRead(n.id)}
-                      className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors cursor-pointer ${!n.read ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}
-                    >
-                      <div className="flex gap-3">
-                        <div className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${n.type === 'urgent' ? 'bg-red-500' :
-                          n.type === 'overdue' ? 'bg-orange-500' :
-                            n.type === 'goal' ? 'bg-green-500' :
-                              n.type === 'recurring' ? 'bg-purple-500' : 'bg-blue-500'
-                          } ${n.read ? 'opacity-20' : 'animate-pulse'}`} />
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start mb-1 gap-2">
-                            <h5 className={`text-sm leading-tight ${!n.read ? 'font-semibold text-slate-900 dark:text-slate-100' : 'font-medium text-slate-600 dark:text-slate-400'}`}>
-                              {n.title}
-                            </h5>
-                            <span className="text-[10px] text-slate-400 whitespace-nowrap">{n.time}</span>
+        {mounted && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative group">
+                <Bell className="h-5 w-5 text-slate-500 group-hover:text-blue-500 transition-colors" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-950 animate-pulse" />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0 shadow-xl border-slate-200 dark:border-slate-800" align="end">
+              <div className="flex items-center justify-between p-4 border-b bg-slate-50/50 dark:bg-slate-900/50">
+                <h4 className="font-semibold text-sm">Notifications</h4>
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto text-xs text-blue-500 p-0 hover:bg-transparent hover:underline"
+                    onClick={markAllRead}
+                  >
+                    Mark all read
+                  </Button>
+                )}
+              </div>
+              <ScrollArea className="h-[350px]">
+                {notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-8 text-center">
+                    <Bell className="h-8 w-8 text-slate-200 mb-2" />
+                    <p className="text-sm text-slate-500 font-medium">All caught up!</p>
+                    <p className="text-xs text-slate-400 mt-1">No new notifications for you.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {notifications.map(n => (
+                      <div
+                        key={n.id}
+                        onClick={() => markRead(n.id)}
+                        className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors cursor-pointer ${!n.read ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}
+                      >
+                        <div className="flex gap-3">
+                          <div className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${n.type === 'urgent' ? 'bg-red-500' :
+                            n.type === 'overdue' ? 'bg-orange-500' :
+                              n.type === 'goal' ? 'bg-green-500' :
+                                n.type === 'recurring' ? 'bg-purple-500' : 'bg-blue-500'
+                            } ${n.read ? 'opacity-20' : 'animate-pulse'}`} />
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start mb-1 gap-2">
+                              <h5 className={`text-sm leading-tight ${!n.read ? 'font-semibold text-slate-900 dark:text-slate-100' : 'font-medium text-slate-600 dark:text-slate-400'}`}>
+                                {n.title}
+                              </h5>
+                              <span className="text-[10px] text-slate-400 whitespace-nowrap">{n.time}</span>
+                            </div>
+                            <p className={`text-xs leading-normal line-clamp-2 ${!n.read ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400'}`}>
+                              {n.description}
+                            </p>
                           </div>
-                          <p className={`text-xs leading-normal line-clamp-2 ${!n.read ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400'}`}>
-                            {n.description}
-                          </p>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </PopoverContent>
-        </Popover>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
     </header>
   );

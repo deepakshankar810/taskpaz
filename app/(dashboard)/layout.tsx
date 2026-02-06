@@ -65,7 +65,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClick={() => setSidebarOpen(false)}
           />
           <div className="relative w-64">
-            <Sidebar />
+            <Sidebar onItemClick={() => setSidebarOpen(false)} />
           </div>
         </div>
       )}

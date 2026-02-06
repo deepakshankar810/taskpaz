@@ -27,7 +27,11 @@ const navItems = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onItemClick?: () => void;
+}
+
+export function Sidebar({ onItemClick }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
@@ -41,11 +45,15 @@ export function Sidebar() {
     router.prefetch(href);
   };
 
+  const handleLinkClick = () => {
+    onItemClick?.();
+  };
+
   return (
     <div className="flex h-full w-64 flex-col border-r bg-white dark:bg-slate-950">
       {/* Header */}
       <div className="flex h-16 items-center border-b px-6">
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3" onClick={handleLinkClick}>
           <Image
             src="/logo.png"
             alt="Taskpaz"
@@ -67,6 +75,7 @@ export function Sidebar() {
               href={item.href}
               prefetch={true}
               onMouseEnter={() => handlePrefetch(item.href)}
+              onClick={handleLinkClick}
             >
               <span
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${isActive
@@ -100,7 +109,10 @@ export function Sidebar() {
         <Button
           variant="ghost"
           className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
-          onClick={() => signOut()}
+          onClick={() => {
+            handleLinkClick();
+            signOut();
+          }}
         >
           <LogOut className="mr-2 h-4 w-4" />
           Log out
