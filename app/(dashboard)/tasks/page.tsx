@@ -55,7 +55,7 @@ function TasksContent() {
     if (!user) return;
 
     // Generate a Firestore-like random ID (20 chars)
-    const taskId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 9);
+    const taskId = crypto.randomUUID();
 
     const optimisticTask = {
       id: taskId,
