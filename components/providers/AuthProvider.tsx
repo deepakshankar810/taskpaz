@@ -1,11 +1,11 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { User } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
-  user: FirebaseUser | null;
+  user: User | null;
   loading: boolean;
 }
 
@@ -15,43 +15,51 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  // Initialize from cache for instant auth
-  const [user, setUser] = useState<FirebaseUser | null>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem('auth_user');
-      if (cached) {
-        try {
-          return JSON.parse(cached);
-        } catch {
-          return null;
-        }
-      }
-    }
-    return null;
-  });
-  const [loading, setLoading] = useState(!user); // If we have cached user, don't show loading
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    // 1. Initial load from cache (client-side only to avoid hydration mismatch)
+    const cached = localStorage.getItem('auth_user');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setUser(parsed);
+        setLoading(false);
+      } catch (e) {
+        console.error('Failed to parse cached user', e);
+      }
+    }
+
+    // 2. Refresh session from Supabase
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const currentUser = session?.user ?? null;
       setUser(currentUser);
       setLoading(false);
 
-      // Cache auth state
-      if (typeof window !== 'undefined') {
-        if (currentUser) {
-          localStorage.setItem('auth_user', JSON.stringify({
-            uid: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName,
-            photoURL: currentUser.photoURL,
-          }));
-        } else {
-          localStorage.removeItem('auth_user');
-        }
+      if (currentUser) {
+        localStorage.setItem('auth_user', JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem('auth_user');
       }
     });
 
-    return () => unsubscribe();
+    // 3. Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      setLoading(false);
+
+      if (currentUser) {
+        localStorage.setItem('auth_user', JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem('auth_user');
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   return (

@@ -1,28 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import {
-    collection,
-    query,
-    where,
-    onSnapshot,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import type { Task } from '@/lib/types';
 import { updateTask, deleteTask } from '@/lib/db/tasks';
-
-// Helper to match `docToTask` in lib/db/tasks.ts but safely inside the hook
-const docToTask = (docSnap: any): Task => {
-    const data = docSnap.data();
-    // Safe robust fallback
-    return {
-        id: docSnap.id,
-        ...data,
-        // Convert Timestamps to Dates safely
-        createdAt: data.createdAt?.toDate?.() || new Date(),
-        updatedAt: data.updatedAt?.toDate?.() || new Date(),
-        dueDate: data.dueDate?.toDate?.() || undefined,
-        completedAt: data.completedAt?.toDate?.() || undefined,
-    } as Task;
-};
 
 export function useTasks(userId: string | undefined | null) {
     const [tasks, setTasks] = useState<Task[]>(() => {
@@ -49,15 +28,6 @@ export function useTasks(userId: string | undefined | null) {
     });
     const [loading, setLoading] = useState(!tasks.length);
     const [error, setError] = useState<Error | null>(null);
-    const [userProfile, setUserProfile] = useState<any>(null);
-
-    // Fetch user profile to check preferences
-    useEffect(() => {
-        if (!userId) return;
-        import('@/lib/auth').then(({ getUserProfile }) => {
-            getUserProfile(userId).then(setUserProfile);
-        });
-    }, [userId]);
 
     useEffect(() => {
         if (!userId) {
@@ -66,44 +36,64 @@ export function useTasks(userId: string | undefined | null) {
             return;
         }
 
-        if (!tasks.length) {
-            setLoading(true);
-        }
-        setError(null);
+        const fetchTasks = async () => {
+            if (!tasks.length) setLoading(true);
 
-        // Tasks are in a top-level 'tasks' collection, filtered by userId
-        const q = query(
-            collection(db, 'tasks'),
-            where('userId', '==', userId)
-        );
+            const { data, error: err } = await supabase
+                .from('tasks')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
 
-        const unsubscribe = onSnapshot(q, {
-            next: (snapshot) => {
-                const userTasks = snapshot.docs.map(doc => docToTask(doc));
-
-                // Sort in memory to avoid needing a composite index for where+orderBy
-                userTasks.sort((a, b) => {
-                    const timeA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
-                    const timeB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
-                    return (timeB || 0) - (timeA || 0);
-                });
+            if (err) {
+                console.error('Error fetching tasks:', err);
+                setError(new Error('Failed to load tasks.'));
+            } else {
+                const userTasks = data.map(task => ({
+                    id: task.id,
+                    userId: task.user_id,
+                    title: task.title,
+                    description: task.description,
+                    status: task.status,
+                    priority: task.priority,
+                    category: task.category,
+                    dueDate: task.due_date ? new Date(task.due_date) : undefined,
+                    projectId: task.project_id,
+                    completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
+                    createdAt: new Date(task.created_at),
+                    updatedAt: new Date(task.updated_at),
+                } as Task));
 
                 if (typeof window !== 'undefined') {
                     localStorage.setItem(`tasks_${userId}`, JSON.stringify(userTasks));
                 }
-
                 setTasks(userTasks);
-                setLoading(false);
-                setError(null);
-            },
-            error: (err) => {
-                console.error('Error fetching tasks:', err);
-                setError(new Error('Failed to load tasks.'));
-                setLoading(false);
             }
-        });
+            setLoading(false);
+        };
 
-        return () => unsubscribe();
+        fetchTasks();
+
+        // Real-time subscription
+        const channel = supabase
+            .channel(`tasks_${userId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tasks',
+                    filter: `user_id=eq.${userId}`,
+                },
+                () => {
+                    fetchTasks();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [userId]);
 
     // Optimistic state

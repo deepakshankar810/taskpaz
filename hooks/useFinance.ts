@@ -1,14 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import {
-    collection,
-    query,
-    where,
-    orderBy,
-    onSnapshot,
-    Unsubscribe
-} from 'firebase/firestore';
+import { supabase } from '@/lib/supabase';
 import { isSameMonth } from 'date-fns';
-import { db } from '@/lib/firebase';
 import { Transaction, Subscription, SavingsGoal } from '@/lib/types';
 import { docToTransaction, docToSubscription, docToSavingsGoal } from '@/lib/db/finance';
 import { toDate } from '@/lib/utils';
@@ -20,7 +12,12 @@ export function useFinance(userId: string | undefined | null) {
             const cached = localStorage.getItem(`finance_${userId}`);
             if (cached) {
                 try {
-                    return JSON.parse(cached);
+                    const parsed = JSON.parse(cached);
+                    return parsed.map((t: any) => ({
+                        ...t,
+                        date: new Date(t.date),
+                        createdAt: new Date(t.createdAt),
+                    }));
                 } catch (e) {
                     return [];
                 }
@@ -41,82 +38,73 @@ export function useFinance(userId: string | undefined | null) {
             return;
         }
 
-        if (!transactions.length) {
-            setLoading(true);
-        }
+        const fetchFinanceData = async () => {
+            try {
+                // Fetch transactions
+                const { data: transData, error: transErr } = await supabase
+                    .from('transactions')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('date', { ascending: false });
 
-        const q = query(
-            collection(db, 'transactions'),
-            where('userId', '==', userId),
-            orderBy('date', 'desc')
-        );
-
-        const subQ = query(
-            collection(db, 'subscriptions'),
-            where('userId', '==', userId),
-            orderBy('createdAt', 'desc')
-        );
-
-        const goalQ = query(
-            collection(db, 'savingsGoals'),
-            where('userId', '==', userId),
-            orderBy('createdAt', 'desc')
-        );
-
-        let unsubscribeTransactions: Unsubscribe;
-        let unsubscribeSubscriptions: Unsubscribe;
-        let unsubscribeGoals: Unsubscribe;
-
-        try {
-            unsubscribeTransactions = onSnapshot(q, {
-                next: (snapshot) => {
-                    const data = snapshot.docs.map(docToTransaction);
-                    if (typeof window !== 'undefined') {
-                        localStorage.setItem(`finance_${userId}`, JSON.stringify(data));
-                    }
-                    setTransactions(data);
-                    setLoading(false);
-                },
-                error: (err) => {
-                    console.error('Error fetching transactions:', err);
-                    console.error('User ID:', userId);
-                    toast.error('Failed to sync transactions. Check console for details.');
-                    setError(err);
-                    setLoading(false);
+                if (transErr) throw transErr;
+                const mappedTrans = transData.map(docToTransaction);
+                setTransactions(mappedTrans);
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem(`finance_${userId}`, JSON.stringify(mappedTrans));
                 }
-            });
 
-            unsubscribeSubscriptions = onSnapshot(subQ, {
-                next: (snapshot) => {
-                    const data = snapshot.docs.map(docToSubscription);
-                    setSubscriptions(data);
-                },
-                error: (err) => {
-                    console.error('Error fetching subscriptions:', err);
-                    toast.error('Failed to sync subscriptions.');
-                }
-            });
+                // Fetch subscriptions
+                const { data: subData, error: subErr } = await supabase
+                    .from('subscriptions')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false });
 
-            unsubscribeGoals = onSnapshot(goalQ, {
-                next: (snapshot) => {
-                    const data = snapshot.docs.map(docToSavingsGoal);
-                    setSavingsGoals(data);
-                },
-                error: (err) => {
-                    console.error('Error fetching savings goals:', err);
-                    toast.error('Failed to sync savings goals.');
-                }
-            });
-        } catch (err: any) {
-            console.error('Error setting up finance listeners:', err);
-            setError(err);
-            setLoading(false);
-        }
+                if (subErr) throw subErr;
+                setSubscriptions(subData.map(docToSubscription));
+
+                // Fetch savings goals
+                const { data: goalData, error: goalErr } = await supabase
+                    .from('savings_goals')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false });
+
+                if (goalErr) throw goalErr;
+                setSavingsGoals(goalData.map(docToSavingsGoal));
+
+                setLoading(false);
+            } catch (err: any) {
+                console.error('Error fetching finance data:', err);
+                toast.error('Failed to sync finance data.');
+                setError(err);
+                setLoading(false);
+            }
+        };
+
+        fetchFinanceData();
+
+        // Real-time subscriptions
+        const transChannel = supabase
+            .channel(`finance_trans_${userId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${userId}` }, fetchFinanceData)
+            .subscribe();
+
+        const subChannel = supabase
+            .channel(`finance_sub_${userId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions', filter: `user_id=eq.${userId}` }, fetchFinanceData)
+            .subscribe();
+
+        const goalChannel = supabase
+            .channel(`finance_goal_${userId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'savings_goals', filter: `user_id=eq.${userId}` }, fetchFinanceData)
+            .subscribe();
 
         return () => {
-            if (unsubscribeTransactions) unsubscribeTransactions();
-            if (unsubscribeSubscriptions) unsubscribeSubscriptions();
-            if (unsubscribeGoals) unsubscribeGoals();
+            supabase.removeChannel(transChannel);
+            supabase.removeChannel(subChannel);
+            supabase.removeChannel(goalChannel);
         };
     }, [userId]);
 

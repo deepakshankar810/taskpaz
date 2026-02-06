@@ -1,111 +1,177 @@
-import { db } from '@/lib/firebase';
-import {
-    collection,
-    doc,
-    addDoc,
-    deleteDoc,
-    updateDoc,
-    serverTimestamp,
-    Timestamp
-} from 'firebase/firestore';
+import { supabase } from '@/lib/supabase';
 import { CreateTransactionInput, Transaction, Subscription, SavingsGoal } from '@/lib/types';
 
+// Transactions
 export const addTransaction = async (userId: string, data: CreateTransactionInput) => {
-    return addDoc(collection(db, 'transactions'), {
-        userId,
-        ...data,
-        createdAt: serverTimestamp(),
-        // Ensure date is a Timestamp for Firestore
-        date: Timestamp.fromDate(data.date),
-    });
+    const { data: result, error } = await supabase
+        .from('transactions')
+        .insert([{
+            user_id: userId,
+            type: data.type,
+            amount: data.amount,
+            category: data.category,
+            description: data.description,
+            date: data.date.toISOString().split('T')[0],
+        }])
+        .select()
+        .single();
+
+    if (error) throw error;
+    return result;
 };
 
 export const deleteTransaction = async (transactionId: string) => {
-    return deleteDoc(doc(db, 'transactions', transactionId));
+    const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', transactionId);
+
+    if (error) throw error;
 };
 
 export const updateTransaction = async (transactionId: string, data: Partial<CreateTransactionInput>) => {
     const updateData: any = { ...data };
     if (data.date) {
-        updateData.date = Timestamp.fromDate(data.date);
+        updateData.date = data.date.toISOString().split('T')[0];
     }
-    return updateDoc(doc(db, 'transactions', transactionId), updateData);
+
+    const { error } = await supabase
+        .from('transactions')
+        .update(updateData)
+        .eq('id', transactionId);
+
+    if (error) throw error;
 };
 
-export const docToTransaction = (docSnap: any): Transaction => {
-    const data = docSnap.data();
+export const docToTransaction = (item: any): Transaction => {
     return {
-        id: docSnap.id,
-        ...data,
-        date: data.date?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-    } as Transaction;
+        id: item.id,
+        userId: item.user_id,
+        type: item.type,
+        amount: item.amount,
+        category: item.category,
+        description: item.description,
+        date: new Date(item.date),
+        createdAt: new Date(item.created_at),
+    } as unknown as Transaction;
 };
 
 // Subscriptions
 export const addSubscription = async (userId: string, data: Omit<Subscription, 'id' | 'userId' | 'createdAt'>) => {
-    return addDoc(collection(db, 'subscriptions'), {
-        userId,
-        ...data,
-        nextBillingDate: Timestamp.fromDate(data.nextBillingDate),
-        active: true,
-        createdAt: serverTimestamp(),
-    });
+    const { data: result, error } = await supabase
+        .from('subscriptions')
+        .insert([{
+            user_id: userId,
+            name: data.name,
+            amount: data.amount,
+            billing_cycle: (data as any).billingCycle || (data as any).billing_cycle,
+            category: data.category,
+            next_billing_date: ((data as any).nextBillingDate || (data as any).next_billing_date).toISOString().split('T')[0],
+            active: true,
+        }])
+        .select()
+        .single();
+
+    if (error) throw error;
+    return result;
 };
 
 export const updateSubscription = async (id: string, data: Partial<Subscription>) => {
-    const updateData: any = { ...data };
-    if (data.nextBillingDate) {
-        updateData.nextBillingDate = Timestamp.fromDate(data.nextBillingDate);
-    }
-    return updateDoc(doc(db, 'subscriptions', id), updateData);
+    const updateData: any = {};
+    if (data.name) updateData.name = data.name;
+    if (data.amount) updateData.amount = data.amount;
+    if ((data as any).billingCycle) updateData.billing_cycle = (data as any).billingCycle;
+    if (data.category) updateData.category = data.category;
+    if ((data as any).nextBillingDate) updateData.next_billing_date = (data as any).nextBillingDate.toISOString().split('T')[0];
+    if (data.active !== undefined) updateData.active = data.active;
+
+    const { error } = await supabase
+        .from('subscriptions')
+        .update(updateData)
+        .eq('id', id);
+
+    if (error) throw error;
 };
 
 export const deleteSubscription = async (id: string) => {
-    return deleteDoc(doc(db, 'subscriptions', id));
+    const { error } = await supabase
+        .from('subscriptions')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
 };
 
-export const docToSubscription = (docSnap: any): Subscription => {
-    const data = docSnap.data();
+export const docToSubscription = (item: any): Subscription => {
     return {
-        id: docSnap.id,
-        ...data,
-        nextBillingDate: data.nextBillingDate?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-    } as Subscription;
+        id: item.id,
+        userId: item.user_id,
+        name: item.name,
+        amount: item.amount,
+        billingCycle: item.billing_cycle,
+        category: item.category,
+        nextBillingDate: new Date(item.next_billing_date),
+        active: item.active,
+        createdAt: new Date(item.created_at),
+    } as unknown as Subscription;
 };
 
 // Savings Goals
 export const addSavingsGoal = async (userId: string, data: Omit<SavingsGoal, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    return addDoc(collection(db, 'savingsGoals'), {
-        userId,
-        ...data,
-        deadline: data.deadline ? Timestamp.fromDate(data.deadline) : null,
-        isCompleted: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-    });
+    const { data: result, error } = await supabase
+        .from('savings_goals')
+        .insert([{
+            user_id: userId,
+            name: data.name,
+            target_amount: (data as any).targetAmount || (data as any).target_amount,
+            current_amount: (data as any).currentAmount || (data as any).current_amount || 0,
+            deadline: data.deadline ? data.deadline.toISOString().split('T')[0] : null,
+            is_completed: (data as any).isCompleted || (data as any).is_completed || false,
+        }])
+        .select()
+        .single();
+
+    if (error) throw error;
+    return result;
 };
 
 export const updateSavingsGoal = async (id: string, data: Partial<SavingsGoal>) => {
-    const updateData: any = { ...data, updatedAt: serverTimestamp() };
-    if (data.deadline) {
-        updateData.deadline = Timestamp.fromDate(data.deadline);
-    }
-    return updateDoc(doc(db, 'savingsGoals', id), updateData);
+    const updateData: any = {
+        updated_at: new Date().toISOString()
+    };
+    if (data.name) updateData.name = data.name;
+    if ((data as any).targetAmount) updateData.target_amount = (data as any).targetAmount;
+    if ((data as any).currentAmount !== undefined) updateData.current_amount = (data as any).currentAmount;
+    if (data.deadline) updateData.deadline = data.deadline.toISOString().split('T')[0];
+    if ((data as any).isCompleted !== undefined) updateData.is_completed = (data as any).isCompleted;
+
+    const { error } = await supabase
+        .from('savings_goals')
+        .update(updateData)
+        .eq('id', id);
+
+    if (error) throw error;
 };
 
 export const deleteSavingsGoal = async (id: string) => {
-    return deleteDoc(doc(db, 'savingsGoals', id));
+    const { error } = await supabase
+        .from('savings_goals')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
 };
 
-export const docToSavingsGoal = (docSnap: any): SavingsGoal => {
-    const data = docSnap.data();
+export const docToSavingsGoal = (item: any): SavingsGoal => {
     return {
-        id: docSnap.id,
-        ...data,
-        deadline: data.deadline?.toDate() || null,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-    } as SavingsGoal;
+        id: item.id,
+        userId: item.user_id,
+        name: item.name,
+        targetAmount: item.target_amount,
+        currentAmount: item.current_amount,
+        deadline: item.deadline ? new Date(item.deadline) : null,
+        isCompleted: item.is_completed,
+        createdAt: new Date(item.created_at),
+        updatedAt: new Date(item.updated_at),
+    } as unknown as SavingsGoal;
 };

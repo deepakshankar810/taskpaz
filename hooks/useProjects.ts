@@ -1,16 +1,8 @@
 'use client';
 
 import { useState, useEffect, Dispatch, SetStateAction } from 'react';
-import {
-    collection,
-    query,
-    where,
-    onSnapshot,
-    orderBy
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { Project } from '@/lib/types';
-import { docToProject } from '@/lib/db/projects';
 
 export function useProjects(userId: string | undefined) {
     const [projects, setProjects] = useState<Project[]>(() => {
@@ -37,49 +29,57 @@ export function useProjects(userId: string | undefined) {
             return;
         }
 
-        // 1. Try to load from cache IMMEDIATELY when we have a userId
-        // This covers the case where the hook mounted before auth was ready
-        const cached = localStorage.getItem(`projects_${userId}`);
-        if (cached) {
-            try {
-                const parsed = JSON.parse(cached);
-                if (parsed && parsed.length > 0) {
-                    setProjects(parsed);
-                    setLoading(false); // Show content immediately
-                }
-            } catch (e) {
-                // Ignore cache errors
-            }
-        }
+        const fetchProjects = async () => {
+            const { data, error: err } = await supabase
+                .from('projects')
+                .select('*')
+                .eq('user_id', userId)
+                .order('updated_at', { ascending: false });
 
-        const q = query(
-            collection(db, 'projects'),
-            where('userId', '==', userId),
-            orderBy('createdAt', 'desc')
-        );
+            if (err) {
+                console.error('Error fetching projects:', err);
+                setError(err);
+            } else {
+                const userProjects = data.map(project => ({
+                    id: project.id,
+                    userId: project.user_id,
+                    name: project.name,
+                    description: project.description,
+                    content: project.content,
+                    color: project.color,
+                    createdAt: new Date(project.created_at),
+                    updatedAt: new Date(project.updated_at),
+                } as Project));
 
-        const unsubscribe = onSnapshot(q, {
-            next: (snapshot) => {
-                const userProjects = snapshot.docs.map(docToProject);
                 setProjects(userProjects);
-
                 // Update cache for next instant load
                 localStorage.setItem(`projects_${userId}`, JSON.stringify(userProjects));
-
-                setLoading(false);
-                setError(null);
-            },
-            error: (err) => {
-                console.error('Error fetching projects:', err);
-                // Handle offline graceful degradation
-                if (err.code !== 'unavailable') {
-                    setError(err);
-                }
-                setLoading(false);
             }
-        });
+            setLoading(false);
+        };
 
-        return () => unsubscribe();
+        fetchProjects();
+
+        // Real-time subscription
+        const channel = supabase
+            .channel(`projects_${userId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'projects',
+                    filter: `user_id=eq.${userId}`,
+                },
+                () => {
+                    fetchProjects();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [userId]);
 
     return {

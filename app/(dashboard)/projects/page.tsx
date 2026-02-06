@@ -35,7 +35,7 @@ export default function ProjectsPage() {
     setIsNewProjectOpen(false);
     toast.success('Project created');
 
-    createProject(user.uid, data)
+    createProject(user.id, data)
       .catch((err) => {
         console.error(err);
         toast.error('Failed to sync project to server');

@@ -27,7 +27,7 @@ import { SavingsGoals } from '@/components/finance/SavingsGoals';
 
 export default function FinancePage() {
   const { user } = useAuth();
-  const { transactions, subscriptions, savingsGoals, stats, loading } = useFinance(user?.uid);
+  const { transactions, subscriptions, savingsGoals, stats, loading } = useFinance(user?.id);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [currency, setCurrency] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,7 +79,7 @@ export default function FinancePage() {
     };
 
     // Background write
-    addTransaction(user.uid, data)
+    addTransaction(user.id, data)
       .then(() => {
         toast.success('Transaction added');
       })
@@ -253,6 +253,7 @@ export default function FinancePage() {
                           <SelectItem value="Salary">Salary</SelectItem>
                           <SelectItem value="Freelance">Freelance</SelectItem>
                           <SelectItem value="Investment">Investment</SelectItem>
+                          <SelectItem value="Savings">Savings</SelectItem>
                           <SelectItem value="Other">Other</SelectItem>
                         </>
                       ) : (
@@ -262,6 +263,7 @@ export default function FinancePage() {
                           <SelectItem value="Shopping">Shopping</SelectItem>
                           <SelectItem value="Bills">Bills</SelectItem>
                           <SelectItem value="Entertainment">Entertainment</SelectItem>
+                          <SelectItem value="Savings">Savings</SelectItem>
                           <SelectItem value="Other">Other</SelectItem>
                         </>
                       )}
@@ -331,8 +333,8 @@ export default function FinancePage() {
       </div>
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
-        {user && <SubscriptionManager subscriptions={subscriptions} userId={user.uid} currency={currency} />}
-        {user && <SavingsGoals goals={savingsGoals} userId={user.uid} currency={currency} />}
+        {user && <SubscriptionManager subscriptions={subscriptions} userId={user.id} currency={currency} />}
+        {user && <SavingsGoals goals={savingsGoals} userId={user.id} currency={currency} />}
       </div>
 
       <Card>
@@ -360,6 +362,7 @@ export default function FinancePage() {
                   <SelectItem value="Salary">Salary</SelectItem>
                   <SelectItem value="Freelance">Freelance</SelectItem>
                   <SelectItem value="Investment">Investment</SelectItem>
+                  <SelectItem value="Savings">Savings</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>

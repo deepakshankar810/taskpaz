@@ -60,7 +60,7 @@ function TasksContent() {
     const optimisticTask = {
       id: taskId,
       ...data,
-      userId: user.uid,
+      user_id: user.id,
       status: 'pending',
       priority: data.priority || 'medium',
       category: data.category || 'personal',
@@ -75,7 +75,7 @@ function TasksContent() {
     toast.success('Task created');
 
     // Background Server Sync (Fire and Forget)
-    createTask(user.uid, data, taskId).catch((error) => {
+    createTask(user.id, data, taskId).catch((error) => {
       console.error('Task creation background error:', error);
       toast.error('Failed to sync task to server.');
       removeOptimisticTask(taskId);

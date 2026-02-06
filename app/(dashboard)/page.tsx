@@ -36,22 +36,22 @@ export default function DashboardPage() {
       if (savedCurrency) setCurrency(savedCurrency);
     }
 
-    const cachedProfile = localStorage.getItem(`profile_${user?.uid}`);
+    const cachedProfile = localStorage.getItem(`profile_${user?.id}`);
     if (cachedProfile) {
       try {
         setUserProfile(JSON.parse(cachedProfile));
       } catch (err) { }
     }
-  }, [user?.uid]);
+  }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!user?.id) return;
     const fetchProfile = async () => {
       try {
-        const data = await getUserProfile(user.uid);
+        const data = await getUserProfile(user.id);
         if (data) {
           setUserProfile(data);
-          localStorage.setItem(`profile_${user.uid}`, JSON.stringify(data));
+          localStorage.setItem(`profile_${user.id}`, JSON.stringify(data));
         }
       } catch (e) {
       } finally {
@@ -59,7 +59,7 @@ export default function DashboardPage() {
       }
     };
     fetchProfile();
-  }, [user?.uid]);
+  }, [user?.id]);
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -68,7 +68,7 @@ export default function DashboardPage() {
     return 'Good Evening';
   };
 
-  const nameToDisplay = userProfile?.name || user?.displayName || (loadingProfile ? '' : 'there');
+  const nameToDisplay = userProfile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const firstName = nameToDisplay.split(' ')[0];
 
   const formatCurrency = (val: number) => {

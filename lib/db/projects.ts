@@ -1,31 +1,22 @@
-import { db, storage } from '@/lib/firebase';
-import {
-    collection,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    doc,
-    query,
-    where,
-    getDocs,
-    orderBy,
-    serverTimestamp,
-    Timestamp
-} from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { supabase } from '@/lib/supabase';
 import { Project, CreateProjectInput } from '@/lib/types';
 
 export const createProject = async (userId: string, input: CreateProjectInput) => {
     try {
-        const docRef = await addDoc(collection(db, 'projects'), {
-            userId,
-            ...input,
-            content: input.content || '',
-            color: input.color || '#3b82f6', // Default blue
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-        });
-        return docRef.id;
+        const { data, error } = await supabase
+            .from('projects')
+            .insert([{
+                user_id: userId,
+                name: input.name,
+                description: input.description || '',
+                content: input.content || '',
+                color: input.color || '#3b82f6',
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data.id;
     } catch (error) {
         console.error('Error creating project:', error);
         throw error;
@@ -34,11 +25,21 @@ export const createProject = async (userId: string, input: CreateProjectInput) =
 
 export const updateProject = async (projectId: string, data: Partial<CreateProjectInput>) => {
     try {
-        const docRef = doc(db, 'projects', projectId);
-        await updateDoc(docRef, {
-            ...data,
-            updatedAt: serverTimestamp()
-        });
+        const updateData: any = {
+            updated_at: new Date().toISOString(),
+        };
+
+        if (data.name) updateData.name = data.name;
+        if (data.description !== undefined) updateData.description = data.description;
+        if (data.content !== undefined) updateData.content = data.content;
+        if (data.color) updateData.color = data.color;
+
+        const { error } = await supabase
+            .from('projects')
+            .update(updateData)
+            .eq('id', projectId);
+
+        if (error) throw error;
     } catch (error) {
         console.error('Error updating project:', error);
         throw error;
@@ -86,10 +87,24 @@ export const uploadProjectImage = async (projectId: string, file: File) => {
     try {
         // Compress image before upload
         const compressedBlob = await compressImage(file);
-        const storageRef = ref(storage, `projects/${projectId}/images/${Date.now()}_optimized.jpg`);
-        const snapshot = await uploadBytes(storageRef, compressedBlob);
-        const url = await getDownloadURL(snapshot.ref);
-        return url;
+
+        // Upload to Supabase Storage
+        const fileName = `${Date.now()}_optimized.jpg`;
+        const { data, error } = await supabase.storage
+            .from('projects')
+            .upload(`${projectId}/images/${fileName}`, compressedBlob, {
+                contentType: 'image/jpeg',
+                upsert: false
+            });
+
+        if (error) throw error;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('projects')
+            .getPublicUrl(data.path);
+
+        return publicUrl;
     } catch (error) {
         console.error('Error uploading image:', error);
         throw error;
@@ -98,32 +113,38 @@ export const uploadProjectImage = async (projectId: string, file: File) => {
 
 export const deleteProject = async (projectId: string) => {
     try {
-        await deleteDoc(doc(db, 'projects', projectId));
+        const { error } = await supabase
+            .from('projects')
+            .delete()
+            .eq('id', projectId);
+
+        if (error) throw error;
     } catch (error) {
         console.error('Error deleting project:', error);
         throw error;
     }
 };
 
-// Helper to convert Firestore doc to Project type
-export const docToProject = (doc: any): Project => {
-    const data = doc.data();
-    return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
-    } as Project;
-};
 export const getProjects = async (userId: string): Promise<Project[]> => {
     try {
-        const q = query(
-            collection(db, 'projects'),
-            where('userId', '==', userId),
-            orderBy('updatedAt', 'desc')
-        );
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(docToProject);
+        const { data, error } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('user_id', userId)
+            .order('updated_at', { ascending: false });
+
+        if (error) throw error;
+
+        return (data || []).map(project => ({
+            id: project.id,
+            userId: project.user_id,
+            name: project.name,
+            description: project.description,
+            content: project.content,
+            color: project.color,
+            createdAt: new Date(project.created_at),
+            updatedAt: new Date(project.updated_at),
+        } as Project));
     } catch (error) {
         console.error('Error getting projects:', error);
         throw error;

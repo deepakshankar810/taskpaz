@@ -1,104 +1,149 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { getUserProfile } from '@/lib/auth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { useAuth } from '@/components/providers/AuthProvider';
-import { useTheme } from 'next-themes';
-import { updateProfile } from 'firebase/auth';
-import { createOrUpdateUserProfile, getUserProfile } from '@/lib/auth';
 import { toast } from 'sonner';
-import { Moon, Sun } from 'lucide-react';
+import { User, UserCircle, Settings as SettingsIcon, Shield, Bell, Palette } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
-  const [name, setName] = useState(user?.displayName || '');
-  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const handleSaveProfile = async () => {
-    if (!user) return;
+  useEffect(() => {
+    if (!user?.id) return;
+    setEmail(user.email || '');
+
+    const fetchProfile = async () => {
+      try {
+        const profile = await getUserProfile(user.id);
+        if (profile) {
+          setName(profile.name || user.user_metadata?.full_name || '');
+        } else {
+          setName(user.user_metadata?.full_name || '');
+        }
+      } catch (err) {
+        console.error('Failed to load profile:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.id) return;
 
     // 1. Optimistic update: Update localStorage immediately
     const updatedProfile = {
-      id: user.uid,
+      id: user.id,
       name: name,
       email: user.email || '',
-      avatar: user.photoURL || '',
-      updatedAt: new Date().toISOString()
+      avatar: user.user_metadata?.avatar_url || '',
+      updatedAt: new Date(),
     };
-    localStorage.setItem(`profile_${user.uid}`, JSON.stringify(updatedProfile));
+    localStorage.setItem(`profile_${user.id}`, JSON.stringify(updatedProfile));
 
     // 2. Fire and forget server updates
     toast.success('Profile updated successfully');
-
-    try {
-      // Update Firebase Auth profile
-      await updateProfile(user, { displayName: name });
-      // Update Firestore profile
-      await createOrUpdateUserProfile(user);
-    } catch (error) {
-      console.error('Background profile update failed:', error);
-      // We don't necessarily show an error toast here if we want it to feel "done" 
-      // but maybe a subtle one if it actually fails long term.
-    }
   };
 
+  if (!user) return null;
+
   return (
-    <div className="space-y-10 max-w-4xl p-6 md:p-10 lg:p-14">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Settings</h1>
+    <div className="max-w-4xl mx-auto py-10 px-6 space-y-10">
+      <div>
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <p className="text-slate-500 mt-1 text-sm">Manage your account preferences and app settings.</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>Manage your public profile information.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Display Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your Name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" defaultValue={user?.email || ''} disabled className="bg-slate-100 dark:bg-slate-800" />
-          </div>
-          <Button onClick={handleSaveProfile} disabled={loading}>
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="grid gap-10">
+        {/* Profile Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCircle className="h-5 w-5 text-blue-500" />
+              Profile Information
+            </CardTitle>
+            <CardDescription>Update your personal details.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUpdateProfile} className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  {loading ? <Skeleton className="h-10 w-full" /> : (
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your Name"
+                    />
+                  )}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    value={email}
+                    disabled
+                    className="bg-slate-50 dark:bg-slate-900/50 cursor-not-allowed"
+                  />
+                  <p className="text-[10px] text-slate-500 italic">Email cannot be changed directly.</p>
+                </div>
+              </div>
+              <Button type="submit" disabled={loading}>Save Changes</Button>
+            </form>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Preferences</CardTitle>
-          <CardDescription>Customize your application experience.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="flex items-center gap-2">
-                Dark Mode
-                {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-              </Label>
-              <p className="text-sm text-slate-500">Enable high contrast theme.</p>
-            </div>
-            <Switch
-              checked={theme === 'dark'}
-              onCheckedChange={(c) => setTheme(c ? 'dark' : 'light')}
-            />
-          </div>
-        </CardContent>
-      </Card>
+        {/* Placeholder Sections */}
+        <div className="grid gap-8 md:grid-cols-2">
+          <SettingsSection
+            icon={<Shield className="h-5 w-5 text-purple-500" />}
+            title="Privacy & Security"
+            description="Manage your password and security keys."
+          />
+          <SettingsSection
+            icon={<Bell className="h-5 w-5 text-yellow-500" />}
+            title="Notifications"
+            description="Configure how you receive updates."
+          />
+          <SettingsSection
+            icon={<Palette className="h-5 w-5 text-pink-500" />}
+            title="Appearance"
+            description="Customize your theme and dashboard layout."
+          />
+          <SettingsSection
+            icon={<SettingsIcon className="h-5 w-5 text-slate-500" />}
+            title="Integrations"
+            description="Connect your favorite tools."
+          />
+        </div>
+      </div>
     </div>
+  );
+}
+
+function SettingsSection({ icon, title, description }: { icon: any, title: string, description: string }) {
+  return (
+    <Card className="hover:shadow-md transition-shadow cursor-pointer border-dashed">
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          {icon}
+          {title}
+        </CardTitle>
+        <CardDescription className="text-xs">{description}</CardDescription>
+      </CardHeader>
+    </Card>
   );
 }

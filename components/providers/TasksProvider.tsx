@@ -26,7 +26,7 @@ const TasksContext = createContext<TasksContextType | undefined>(undefined);
 
 export function TasksProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
-    const tasksData = useTasks(user?.uid);
+    const tasksData = useTasks(user?.id);
 
     return (
         <TasksContext.Provider value={tasksData}>

@@ -1,70 +1,48 @@
-import {
-  collection,
-  doc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  getDoc,
-  query,
-  where,
-  orderBy,
-  Timestamp,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import type { Task, CreateTaskInput, UpdateTaskInput, TaskStatus, TaskPriority, TaskCategory } from '@/lib/types';
 
-const TASKS_COLLECTION = 'tasks';
-
-// Helper to convert Firestore doc to Task
-const docToTask = (docSnap: any): Task => {
-  const data = docSnap.data();
-  if (!data) return {} as Task;
-  return {
-    id: docSnap.id,
-    ...data,
-    createdAt: data.createdAt?.toDate?.() || new Date(),
-    updatedAt: data.updatedAt?.toDate?.() || new Date(),
-    dueDate: data.dueDate?.toDate?.() || undefined,
-    completedAt: data.completedAt?.toDate?.() || undefined,
-  } as Task;
-};
+const TASKS_TABLE = 'tasks';
 
 export const createTask = async (userId: string, input: CreateTaskInput, id?: string): Promise<Task> => {
   try {
     console.log('[createTask] Starting...', { userId, title: input.title });
-    const tasksRef = collection(db, TASKS_COLLECTION);
-    const docRef = id ? doc(tasksRef, id) : doc(tasksRef); // Use provided ID or generate one
 
-    // Build task object
     const newTaskData = {
-      userId,
+      id: id || undefined, // Let Supabase generate if not provided
+      user_id: userId,
       title: input.title,
       description: input.description || '',
       status: 'pending' as TaskStatus,
       priority: input.priority || 'medium' as TaskPriority,
       category: input.category || 'personal' as TaskCategory,
-      dueDate: input.dueDate ? Timestamp.fromDate(input.dueDate) : null,
-      projectId: input.projectId || null,
-      tags: input.tags || [],
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      due_date: input.dueDate ? input.dueDate.toISOString().split('T')[0] : null,
+      project_id: input.projectId || null,
     };
 
-    // Single write operation (async)
-    // We don't await getDoc afterwards because it causes a heavy delay
-    await setDoc(docRef, newTaskData);
-    console.log('[createTask] Doc set:', docRef.id);
+    const { data, error } = await supabase
+      .from(TASKS_TABLE)
+      .insert([newTaskData])
+      .select()
+      .single();
 
-    // Return the task immediately with local fields for Optimistic UI support
+    if (error) throw error;
+
+    console.log('[createTask] Task created:', data.id);
+
     return {
-      id: docRef.id,
-      ...newTaskData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      dueDate: input.dueDate || undefined,
-    } as unknown as Task;
+      id: data.id,
+      userId: data.user_id,
+      title: data.title,
+      description: data.description,
+      status: data.status,
+      priority: data.priority,
+      category: data.category,
+      dueDate: data.due_date ? new Date(data.due_date) : undefined,
+      projectId: data.project_id,
+      completedAt: data.completed_at ? new Date(data.completed_at) : undefined,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    } as Task;
   } catch (error) {
     console.error('[createTask] Error:', error);
     throw error;
@@ -76,30 +54,41 @@ export const getUserTasks = async (
   filters?: { status?: TaskStatus[], category?: TaskCategory[], priority?: TaskPriority[] }
 ): Promise<Task[]> => {
   try {
-    const tasksRef = collection(db, TASKS_COLLECTION);
+    let query = supabase
+      .from(TASKS_TABLE)
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-    // Simplified query for speed
-    let q = query(
-      tasksRef,
-      where('userId', '==', userId)
-    );
-
-    const snapshot = await getDocs(q);
-    let tasks = snapshot.docs.map(docToTask);
-
-    // Filter in memory to avoid index hangs
+    // Apply filters
     if (filters?.status && filters.status.length > 0) {
-      tasks = tasks.filter(t => filters.status!.includes(t.status));
-    }
-    if (filters?.priority && filters.priority.length > 0) {
-      tasks = tasks.filter(t => filters.priority!.includes(t.priority));
+      query = query.in('status', filters.status);
     }
     if (filters?.category && filters.category.length > 0) {
-      tasks = tasks.filter(t => filters.category!.includes(t.category));
+      query = query.in('category', filters.category);
+    }
+    if (filters?.priority && filters.priority.length > 0) {
+      query = query.in('priority', filters.priority);
     }
 
-    // Sort in memory
-    return tasks.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    return (data || []).map(task => ({
+      id: task.id,
+      userId: task.user_id,
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      priority: task.priority,
+      category: task.category,
+      dueDate: task.due_date ? new Date(task.due_date) : undefined,
+      projectId: task.project_id,
+      completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
+      createdAt: new Date(task.created_at),
+      updatedAt: new Date(task.updated_at),
+    } as Task));
   } catch (error) {
     console.error('[getUserTasks] Error:', error);
     return [];
@@ -108,22 +97,31 @@ export const getUserTasks = async (
 
 export const updateTask = async (taskId: string, updates: UpdateTaskInput): Promise<void> => {
   try {
-    const taskRef = doc(db, TASKS_COLLECTION, taskId);
-
     const updateData: any = {
       ...updates,
-      updatedAt: serverTimestamp(),
+      updated_at: new Date().toISOString(),
     };
 
+    // Convert camelCase to snake_case
     if (updates.dueDate) {
-      updateData.dueDate = Timestamp.fromDate(updates.dueDate);
+      updateData.due_date = updates.dueDate.toISOString().split('T')[0];
+      delete updateData.dueDate;
+    }
+    if (updates.projectId !== undefined) {
+      updateData.project_id = updates.projectId;
+      delete updateData.projectId;
     }
 
     if (updates.status === 'completed') {
-      updateData.completedAt = serverTimestamp();
+      updateData.completed_at = new Date().toISOString();
     }
 
-    await updateDoc(taskRef, updateData);
+    const { error } = await supabase
+      .from(TASKS_TABLE)
+      .update(updateData)
+      .eq('id', taskId);
+
+    if (error) throw error;
   } catch (error) {
     console.error('Error updating task:', error);
     throw error;
@@ -136,8 +134,12 @@ export const completeTask = async (taskId: string): Promise<void> => {
 
 export const deleteTask = async (taskId: string): Promise<void> => {
   try {
-    const taskRef = doc(db, TASKS_COLLECTION, taskId);
-    await deleteDoc(taskRef);
+    const { error } = await supabase
+      .from(TASKS_TABLE)
+      .delete()
+      .eq('id', taskId);
+
+    if (error) throw error;
   } catch (error) {
     console.error('Error deleting task:', error);
     throw error;

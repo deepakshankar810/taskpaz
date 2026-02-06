@@ -35,7 +35,7 @@ const PRIORITY_COLORS = {
 export default function AnalyticsPage() {
   const { user } = useAuth();
   const { tasks, stats } = useTasksContext();
-  const { transactions } = useFinance(user?.uid);
+  const { transactions } = useFinance(user?.id);
   const [currency, setCurrency] = useMemo(() => {
     if (typeof window !== 'undefined') {
       return [localStorage.getItem('finance_currency') || '$', () => { }];

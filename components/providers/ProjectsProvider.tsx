@@ -23,11 +23,11 @@ const ProjectsContext = createContext<ProjectsContextType>({
 export function ProjectsProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
     // Lift the hook up here so it runs once per session/user
-    const { projects, loading, error, setProjectsOptimistic } = useProjectsHook(user?.uid);
+    const { projects, loading, error, setProjectsOptimistic } = useProjectsHook(user?.id);
 
     // Optimistic update: immediately update local state & cache, fire Firestore in background
     const optimisticUpdateProject = useCallback((projectId: string, data: Partial<Project>) => {
-        if (!user?.uid) return;
+        if (!user?.id) return;
 
         // 1. Immediately update local state
         setProjectsOptimistic((prev: Project[]) => {
@@ -37,7 +37,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
                     : p
             );
             // 2. Immediately update localStorage cache
-            localStorage.setItem(`projects_${user.uid}`, JSON.stringify(updated));
+            localStorage.setItem(`projects_${user.id}`, JSON.stringify(updated));
             return updated;
         });
 
@@ -46,7 +46,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
             console.error('Background save failed:', err);
             // Could add toast notification here for error recovery
         });
-    }, [user?.uid, setProjectsOptimistic]);
+    }, [user?.id, setProjectsOptimistic]);
 
     return (
         <ProjectsContext.Provider value={{ projects, loading, error, optimisticUpdateProject }}>

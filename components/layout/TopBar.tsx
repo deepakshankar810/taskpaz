@@ -21,8 +21,8 @@ interface TopBarProps {
 
 export function TopBar({ onMenuClick }: TopBarProps) {
   const { user } = useAuth();
-  const { tasks } = useTasks(user?.uid);
-  const { subscriptions, savingsGoals } = useFinance(user?.uid);
+  const { tasks } = useTasks(user?.id);
+  const { subscriptions, savingsGoals } = useFinance(user?.id);
   const [readIds, setReadIds] = useState<string[]>([]);
   const [currency, setCurrency] = useState('$');
 
