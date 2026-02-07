@@ -64,10 +64,10 @@ export const addSubscription = async (userId: string, data: Omit<Subscription, '
             user_id: userId,
             name: data.name,
             amount: data.amount,
-            billing_cycle: (data as any).billingCycle || (data as any).billing_cycle,
-            billing_interval: (data as any).billingInterval || 1,
+            billing_cycle: data.billingCycle,
+            billing_interval: data.billingInterval || 1,
             category: data.category,
-            next_billing_date: ((data as any).nextBillingDate || (data as any).next_billing_date).toISOString().split('T')[0],
+            next_billing_date: data.nextBillingDate.toISOString().split('T')[0],
             active: true,
         }])
         .select()
@@ -81,10 +81,10 @@ export const updateSubscription = async (id: string, data: Partial<Subscription>
     const updateData: any = {};
     if (data.name) updateData.name = data.name;
     if (data.amount) updateData.amount = data.amount;
-    if ((data as any).billingCycle) updateData.billing_cycle = (data as any).billingCycle;
-    if ((data as any).billingInterval) updateData.billing_interval = (data as any).billingInterval;
+    if (data.billingCycle) updateData.billing_cycle = data.billingCycle;
+    if (data.billingInterval) updateData.billing_interval = data.billingInterval;
     if (data.category) updateData.category = data.category;
-    if ((data as any).nextBillingDate) updateData.next_billing_date = (data as any).nextBillingDate.toISOString().split('T')[0];
+    if (data.nextBillingDate) updateData.next_billing_date = data.nextBillingDate.toISOString().split('T')[0];
     if (data.active !== undefined) updateData.active = data.active;
 
     const { error } = await supabase

@@ -55,6 +55,7 @@ create table if not exists subscriptions (
   name text not null,
   amount numeric not null,
   billing_cycle text not null,
+  billing_interval integer default 1,
   category text not null,
   next_billing_date date not null,
   active boolean default true,

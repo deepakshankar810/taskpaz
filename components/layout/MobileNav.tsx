@@ -9,8 +9,6 @@ import { QuickActionPopup } from './QuickActionPopup';
 const mobileItems = [
   { name: 'Home', href: '/', icon: LayoutDashboard },
   { name: 'Calendar', href: '/tasks?view=calendar', icon: Calendar },
-  { name: 'Projects', href: '/projects', icon: Folder },
-  { name: 'Finance', href: '/finance', icon: Wallet },
 ];
 
 export function MobileNav() {
@@ -26,8 +24,8 @@ export function MobileNav() {
     <>
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white pb-safe dark:bg-slate-950 md:hidden">
         <div className="flex h-16 items-center justify-around px-2">
-          {/* First two items */}
-          {mobileItems.slice(0, 2).map((item) => {
+          {/* Home Item */}
+          {mobileItems.slice(0, 1).map((item) => {
             const isActive = pathname === (item.href.split('?')[0]);
 
             return (
@@ -61,9 +59,9 @@ export function MobileNav() {
             </button>
           </div>
 
-          {/* Last two items */}
-          {mobileItems.slice(2).map((item) => {
-            const isActive = pathname === item.href;
+          {/* Calendar Item */}
+          {mobileItems.slice(1, 2).map((item) => {
+            const isActive = pathname === item.href.split('?')[0];
 
             return (
               <Link
