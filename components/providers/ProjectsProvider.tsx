@@ -10,6 +10,8 @@ interface ProjectsContextType {
     projects: Project[];
     loading: boolean;
     error: Error | null;
+    addOptimisticProject: (project: Project) => void;
+    removeOptimisticProject: (projectId: string) => void;
     optimisticUpdateProject: (projectId: string, data: Partial<Project>) => void;
 }
 
@@ -17,6 +19,8 @@ const ProjectsContext = createContext<ProjectsContextType>({
     projects: [],
     loading: true,
     error: null,
+    addOptimisticProject: () => { },
+    removeOptimisticProject: () => { },
     optimisticUpdateProject: () => { },
 });
 
@@ -24,6 +28,26 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
     // Lift the hook up here so it runs once per session/user
     const { projects, loading, error, setProjectsOptimistic } = useProjectsHook(user?.id);
+
+    // Optimistic creation
+    const addOptimisticProject = useCallback((project: Project) => {
+        if (!user?.id) return;
+        setProjectsOptimistic((prev: Project[]) => {
+            const updated = [project, ...prev];
+            localStorage.setItem(`projects_${user.id}`, JSON.stringify(updated));
+            return updated;
+        });
+    }, [user?.id, setProjectsOptimistic]);
+
+    // Optimistic deletion
+    const removeOptimisticProject = useCallback((projectId: string) => {
+        if (!user?.id) return;
+        setProjectsOptimistic((prev: Project[]) => {
+            const updated = prev.filter(p => p.id !== projectId);
+            localStorage.setItem(`projects_${user.id}`, JSON.stringify(updated));
+            return updated;
+        });
+    }, [user?.id, setProjectsOptimistic]);
 
     // Optimistic update: immediately update local state & cache, fire Firestore in background
     const optimisticUpdateProject = useCallback((projectId: string, data: Partial<Project>) => {
@@ -49,7 +73,14 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     }, [user?.id, setProjectsOptimistic]);
 
     return (
-        <ProjectsContext.Provider value={{ projects, loading, error, optimisticUpdateProject }}>
+        <ProjectsContext.Provider value={{
+            projects,
+            loading,
+            error,
+            addOptimisticProject,
+            removeOptimisticProject,
+            optimisticUpdateProject
+        }}>
             {children}
         </ProjectsContext.Provider>
     );

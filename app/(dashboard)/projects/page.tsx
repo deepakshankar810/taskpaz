@@ -24,24 +24,39 @@ import { toDate } from '@/lib/utils';
 export default function ProjectsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { projects, loading } = useProjectsContext();
+  const { projects, loading, addOptimisticProject, removeOptimisticProject } = useProjectsContext();
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleCreateProject = (data: CreateProjectInput) => {
     if (!user) return;
 
-    setIsSaving(true);
+    // Generate a temporary ID
+    const projectId = crypto.randomUUID();
+
+    const optimisticProject = {
+      id: projectId,
+      userId: user.id,
+      name: data.name,
+      description: data.description || '',
+      content: data.content || '',
+      color: data.color || '#3b82f6',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // 1. Instant UI update
+    addOptimisticProject(optimisticProject);
     setIsNewProjectOpen(false);
     toast.success('Project created');
 
+    // 2. Background Sync
     createProject(user.id, data)
       .catch((err) => {
-        console.error(err);
+        console.error('Project creation background error:', err);
         toast.error('Failed to sync project to server');
-      })
-      .finally(() => {
-        setIsSaving(false);
+        // Rollback: remove the optimistic project if it fails
+        removeOptimisticProject(projectId);
       });
   };
 
@@ -49,9 +64,16 @@ export default function ProjectsPage() {
     e.stopPropagation();
     if (!confirm('Are you sure you want to delete this project?')) return;
 
+    // 1. Instant UI update
+    removeOptimisticProject(id);
     toast.success('Project deleted');
-    deleteProject(id).catch(() => {
-      toast.error('Failed to delete project');
+
+    // 2. Background Sync
+    deleteProject(id).catch((err) => {
+      console.error('Project deletion background error:', err);
+      toast.error('Failed to delete project from server');
+      // Note: Ideally we would rollback here, but we'd need the original project data.
+      // Since it's a deletion, usually a refresh or onSnapshot will restore it if it fails.
     });
   };
 
