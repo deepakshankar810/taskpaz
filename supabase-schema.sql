@@ -59,7 +59,8 @@ create table if not exists subscriptions (
   category text not null,
   next_billing_date date not null,
   active boolean default true,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 -- Savings Goals Table

@@ -90,39 +90,72 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       });
     });
 
-    // 4. Subscriptions Due Soon (within 3 days)
-    subscriptions?.filter(s => s.active).forEach(s => {
+    // 4. Subscriptions
+    subscriptions?.forEach(s => {
+      if (!s.active) return;
       const daysLeft = differenceInDays(new Date(s.nextBillingDate), new Date());
+
+      // Due soon (within 3 days)
       if (daysLeft >= 0 && daysLeft <= 3) {
         items.push({
-          id: `sub-${s.id}-${s.nextBillingDate.getTime()}`,
+          id: `sub-due-${s.id}-${s.nextBillingDate.toISOString()}`,
           title: 'Subscription Reminder',
           description: `Your ${s.name} subscription (${currency}${s.amount}) is due in ${daysLeft === 0 ? 'today' : daysLeft === 1 ? '1 day' : daysLeft + ' days'}.`,
           date: new Date(s.nextBillingDate),
           time: formatDistanceToNow(new Date(s.nextBillingDate), { addSuffix: true }),
           type: 'recurring',
-          read: readIds.includes(`sub-${s.id}-${s.nextBillingDate.getTime()}`)
+          read: readIds.includes(`sub-due-${s.id}-${s.nextBillingDate.toISOString()}`)
+        });
+      }
+      // Overdue
+      else if (daysLeft < 0) {
+        items.push({
+          id: `sub-overdue-${s.id}-${s.nextBillingDate.toISOString()}`,
+          title: 'Subscription Overdue',
+          description: `The billing date for ${s.name} (${currency}${s.amount}) was ${formatDistanceToNow(new Date(s.nextBillingDate), { addSuffix: true })}.`,
+          date: new Date(s.nextBillingDate),
+          time: formatDistanceToNow(new Date(s.nextBillingDate), { addSuffix: true }),
+          type: 'urgent',
+          read: readIds.includes(`sub-overdue-${s.id}-${s.nextBillingDate.toISOString()}`)
         });
       }
     });
 
-    // 5. Savings Goals Met
-    savingsGoals?.filter(g => g.isCompleted).forEach(g => {
-      items.push({
-        id: `goal-${g.id}`,
-        title: 'Goal Achieved! 🎉',
-        description: `Congratulations! You've reached your target of ${currency}${g.targetAmount} for "${g.name}".`,
-        date: new Date(g.updatedAt),
-        time: formatDistanceToNow(new Date(g.updatedAt), { addSuffix: true }),
-        type: 'goal',
-        read: readIds.includes(`goal-${g.id}`)
-      });
+    // 5. Savings Goals
+    savingsGoals?.forEach(g => {
+      // Goal Achieved
+      if (g.isCompleted) {
+        items.push({
+          id: `goal-met-${g.id}`,
+          title: 'Goal Achieved! 🎉',
+          description: `Congratulations! You've reached your target of ${currency}${g.targetAmount} for "${g.name}".`,
+          date: g.updatedAt ? new Date(g.updatedAt) : new Date(),
+          time: g.updatedAt ? formatDistanceToNow(new Date(g.updatedAt), { addSuffix: true }) : 'Just now',
+          type: 'goal',
+          read: readIds.includes(`goal-met-${g.id}`)
+        });
+      }
+      // Deadline Approaching (within 3 days)
+      else if (g.deadline) {
+        const daysLeft = differenceInDays(new Date(g.deadline), new Date());
+        if (daysLeft >= 0 && daysLeft <= 3) {
+          items.push({
+            id: `goal-deadline-${g.id}`,
+            title: 'Goal Deadline Near',
+            description: `Your deadline for "${g.name}" is in ${daysLeft === 0 ? 'today' : daysLeft === 1 ? '1 day' : daysLeft + ' days'}.`,
+            date: new Date(g.deadline),
+            time: formatDistanceToNow(new Date(g.deadline), { addSuffix: true }),
+            type: 'upcoming',
+            read: readIds.includes(`goal-deadline-${g.id}`)
+          });
+        }
+      }
     });
 
     return items
       .sort((a, b) => b.date.getTime() - a.date.getTime())
       .slice(0, 15); // Limit to 15 notifications
-  }, [tasks, readIds]);
+  }, [tasks, subscriptions, savingsGoals, readIds, currency]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 

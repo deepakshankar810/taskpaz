@@ -79,8 +79,10 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                 active: true,
             } as any);
             toast.success('Subscription added');
-        } catch (error) {
-            toast.error('Failed to add subscription');
+        } catch (error: any) {
+            console.error('Subscription error:', error);
+            const msg = error.message || 'Check console';
+            toast.error(`Failed to add subscription: ${msg}`);
             setSubscriptions(prev => prev.filter(s => s.id !== tempId));
         }
     };

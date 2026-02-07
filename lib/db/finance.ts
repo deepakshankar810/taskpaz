@@ -64,11 +64,11 @@ export const addSubscription = async (userId: string, data: Omit<Subscription, '
             user_id: userId,
             name: data.name,
             amount: data.amount,
-            billing_cycle: data.billingCycle,
-            billing_interval: data.billingInterval || 1,
+            billing_cycle: (data as any).billingCycle || (data as any).billing_cycle,
+            billing_interval: (data as any).billingInterval || (data as any).billing_interval || 1,
             category: data.category,
-            next_billing_date: data.nextBillingDate.toISOString().split('T')[0],
-            active: true,
+            next_billing_date: data.nextBillingDate ? data.nextBillingDate.toISOString().split('T')[0] : (data as any).next_billing_date,
+            active: data.active !== undefined ? data.active : true,
         }])
         .select()
         .single();
@@ -78,13 +78,16 @@ export const addSubscription = async (userId: string, data: Omit<Subscription, '
 };
 
 export const updateSubscription = async (id: string, data: Partial<Subscription>) => {
-    const updateData: any = {};
+    const updateData: any = {
+        updated_at: new Date().toISOString()
+    };
     if (data.name) updateData.name = data.name;
     if (data.amount) updateData.amount = data.amount;
-    if (data.billingCycle) updateData.billing_cycle = data.billingCycle;
-    if (data.billingInterval) updateData.billing_interval = data.billingInterval;
+    if (data.billingCycle || (data as any).billing_cycle) updateData.billing_cycle = data.billingCycle || (data as any).billing_cycle;
+    if (data.billingInterval || (data as any).billing_interval) updateData.billing_interval = data.billingInterval || (data as any).billing_interval;
     if (data.category) updateData.category = data.category;
     if (data.nextBillingDate) updateData.next_billing_date = data.nextBillingDate.toISOString().split('T')[0];
+    else if ((data as any).next_billing_date) updateData.next_billing_date = (data as any).next_billing_date;
     if (data.active !== undefined) updateData.active = data.active;
 
     const { error } = await supabase
@@ -116,6 +119,7 @@ export const docToSubscription = (item: any): Subscription => {
         nextBillingDate: new Date(item.next_billing_date),
         active: item.active,
         createdAt: new Date(item.created_at),
+        updatedAt: item.updated_at ? new Date(item.updated_at) : undefined,
     } as unknown as Subscription;
 };
 

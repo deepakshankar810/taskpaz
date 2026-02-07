@@ -96,6 +96,7 @@ export interface Subscription {
   nextBillingDate: Date;
   active: boolean;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 export interface SavingsGoal {
