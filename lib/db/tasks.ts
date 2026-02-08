@@ -98,22 +98,27 @@ export const getUserTasks = async (
 export const updateTask = async (taskId: string, updates: UpdateTaskInput): Promise<void> => {
   try {
     const updateData: any = {
-      ...updates,
       updated_at: new Date().toISOString(),
     };
 
-    // Convert camelCase to snake_case
-    if (updates.dueDate) {
-      updateData.due_date = updates.dueDate.toISOString().split('T')[0];
-      delete updateData.dueDate;
+    // Explicitly map allowed fields from UpdateTaskInput to database columns
+    if (updates.title !== undefined) updateData.title = updates.title;
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.status !== undefined) {
+      updateData.status = updates.status;
+      if (updates.status === 'completed') {
+        updateData.completed_at = new Date().toISOString();
+      }
     }
-    if (updates.projectId !== undefined) {
-      updateData.project_id = updates.projectId;
-      delete updateData.projectId;
+    if (updates.priority !== undefined) updateData.priority = updates.priority;
+    if (updates.category !== undefined) updateData.category = updates.category;
+
+    if (updates.dueDate !== undefined) {
+      updateData.due_date = updates.dueDate ? updates.dueDate.toISOString().split('T')[0] : null;
     }
 
-    if (updates.status === 'completed') {
-      updateData.completed_at = new Date().toISOString();
+    if (updates.projectId !== undefined) {
+      updateData.project_id = updates.projectId;
     }
 
     const { error } = await supabase

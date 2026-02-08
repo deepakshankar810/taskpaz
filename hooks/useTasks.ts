@@ -137,9 +137,6 @@ export function useTasks(userId: string | undefined | null) {
 
     const removeOptimisticTask = (taskId: string) => {
         setOptimisticTasks(prev => prev.filter(t => t.id !== taskId));
-        deleteTask(taskId).catch(err => {
-            console.error("Failed to delete task", err);
-        });
     };
 
     const optimisticUpdateTask = (taskId: string, updates: Partial<Task>) => {
@@ -147,10 +144,6 @@ export function useTasks(userId: string | undefined | null) {
             ...prev,
             [taskId]: { ...(prev[taskId] || {}), ...updates }
         }));
-
-        updateTask(taskId, updates).catch(err => {
-            console.error("Failed to update task", err);
-        });
     };
 
     // Derived state: Combined and sorted tasks
