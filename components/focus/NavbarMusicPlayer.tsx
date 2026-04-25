@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Play, Pause, SkipForward, Headphones, Search, Loader2 } from 'lucide-react';
+import { Play, Pause, SkipForward, Headphones, Search, Loader2, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useMusic } from '@/components/providers/MusicProvider';
 
 export function NavbarMusicPlayer() {
-  const { currentStation, isPlaying, isSearching, togglePlay, nextStation, searchSong } = useMusic();
+  const { currentStation, isPlaying, isRepeating, isSearching, togglePlay, toggleRepeat, nextStation, searchSong } = useMusic();
   const [query, setQuery] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
@@ -55,6 +55,16 @@ export function NavbarMusicPlayer() {
         </div>
 
         <div className="flex items-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`h-7 w-7 rounded-full transition-colors ${isRepeating ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-slate-500 hover:text-blue-500'}`}
+            onClick={toggleRepeat}
+            title={isRepeating ? 'Repeat: On' : 'Repeat: Off'}
+          >
+            <Repeat className="h-3.5 w-3.5" />
+          </Button>
+
           <Button 
             variant="ghost" 
             size="icon" 

@@ -73,6 +73,15 @@ export function FocusMusicPlayer() {
             <Button 
               variant="ghost" 
               size="icon" 
+              className={`h-8 w-8 transition-colors ${isRepeating ? 'text-white bg-white/20 rounded-full' : 'text-indigo-200 hover:text-white hover:bg-white/10'}`}
+              onClick={toggleRepeat}
+              title={isRepeating ? 'Repeat: On' : 'Repeat: Off'}
+            >
+              <Repeat className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
               className="h-8 w-8 text-indigo-200 hover:text-white hover:bg-white/10"
               onClick={prevStation}
             >

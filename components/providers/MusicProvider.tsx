@@ -33,8 +33,10 @@ const INITIAL_STATIONS: Station[] = [
 interface MusicContextType {
   currentStation: Station;
   isPlaying: boolean;
+  isRepeating: boolean;
   isSearching: boolean;
   togglePlay: () => void;
+  toggleRepeat: () => void;
   nextStation: () => void;
   prevStation: () => void;
   searchSong: (query: string) => Promise<void>;
@@ -45,9 +47,11 @@ const MusicContext = createContext<MusicContextType | undefined>(undefined);
 export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [currentStation, setCurrentStation] = useState<Station>(INITIAL_STATIONS[0]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isRepeating, setIsRepeating] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
   const togglePlay = () => setIsPlaying(!isPlaying);
+  const toggleRepeat = () => setIsRepeating(!isRepeating);
 
   const nextStation = () => {
     const index = INITIAL_STATIONS.findIndex(s => s.id === currentStation.id);
@@ -90,8 +94,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     <MusicContext.Provider value={{ 
       currentStation, 
       isPlaying, 
+      isRepeating,
       isSearching, 
       togglePlay, 
+      toggleRepeat,
       nextStation, 
       prevStation, 
       searchSong 
@@ -102,10 +108,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       {isPlaying && (
         <div className="hidden pointer-events-none opacity-0 invisible overflow-hidden w-0 h-0">
           <iframe
-            key={currentStation.id}
+            key={currentStation.id + (isRepeating ? '-repeat' : '')}
             width="1"
             height="1"
-            src={`https://www.youtube.com/embed/${currentStation.id}?autoplay=1&mute=0&controls=0&showinfo=0`}
+            src={`https://www.youtube.com/embed/${currentStation.id}?autoplay=1&mute=0&controls=0&showinfo=0${isRepeating ? `&loop=1&playlist=${currentStation.id}` : ''}`}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           ></iframe>
         </div>
