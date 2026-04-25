@@ -28,3 +28,14 @@ export function toDate(val: any): Date | null {
   const d = new Date(val);
   return isNaN(d.getTime()) ? null : d;
 }
+
+export function getDaysRemaining(targetDate: Date | string | number): number {
+  const target = new Date(targetDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+  
+  const diffTime = target.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+}

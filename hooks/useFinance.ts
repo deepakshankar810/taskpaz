@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { isSameMonth } from 'date-fns';
 import { Transaction, Subscription, SavingsGoal } from '@/lib/types';
-import { docToTransaction, docToSubscription, docToSavingsGoal } from '@/lib/db/finance';
+import { docToTransaction, docToSubscription, docToSavingsGoal, refreshSubscriptionDate } from '@/lib/db/finance';
 import { toDate } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -69,8 +69,16 @@ export function useFinance(userId: string | undefined | null) {
                     localStorage.setItem(`finance_${userId}`, JSON.stringify(mappedTrans));
                 }
 
-                setSubscriptions(subRes.data.map(docToSubscription));
+                const mappedSubs = subRes.data.map(docToSubscription);
+                setSubscriptions(mappedSubs);
                 setSavingsGoals(goalRes.data.map(docToSavingsGoal));
+
+                // Background check for expired subscriptions
+                mappedSubs.forEach(sub => {
+                    if (sub.active) {
+                        refreshSubscriptionDate(sub);
+                    }
+                });
 
                 setLoading(false);
             } catch (err: any) {

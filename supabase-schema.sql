@@ -129,3 +129,74 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Transactions Table
+create table if not exists transactions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  type text not null check (type in ('income', 'expense')),
+  amount decimal(12,2) not null,
+  category text not null,
+  description text,
+  date date not null default current_date,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Subscriptions Table
+create table if not exists subscriptions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  name text not null,
+  amount decimal(12,2) not null,
+  billing_cycle text not null check (billing_cycle in ('monthly', 'yearly')),
+  billing_interval integer default 1,
+  category text default 'General',
+  next_billing_date date not null,
+  active boolean default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Savings Goals Table
+create table if not exists savings_goals (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  name text not null,
+  target_amount decimal(12,2) not null,
+  current_amount decimal(12,2) default 0,
+  deadline date,
+  color text default '#3b82f6',
+  is_completed boolean default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Enable RLS for Finance Tables
+alter table transactions enable row level security;
+alter table subscriptions enable row level security;
+alter table savings_goals enable row level security;
+
+-- RLS Policies for Finance
+do $$
+begin
+    -- Transactions
+    if not exists (select 1 from pg_policies where policyname = 'Users can manage own transactions') then
+        create policy "Users can manage own transactions" on transactions for all using (auth.uid() = user_id);
+    end if;
+
+    -- Subscriptions
+    if not exists (select 1 from pg_policies where policyname = 'Users can manage own subscriptions') then
+        create policy "Users can manage own subscriptions" on subscriptions for all using (auth.uid() = user_id);
+    end if;
+
+    -- Savings Goals
+    if not exists (select 1 from pg_policies where policyname = 'Users can manage own savings goals') then
+        create policy "Users can manage own savings goals" on savings_goals for all using (auth.uid() = user_id);
+    end if;
+end $$;
+
+-- Add Realtime for Finance Tables
+alter publication supabase_realtime add table transactions;
+alter publication supabase_realtime add table subscriptions;
+alter publication supabase_realtime add table savings_goals;

@@ -8,6 +8,7 @@ import { CreditCard, Plus, Trash2, Calendar } from 'lucide-react';
 import { Subscription } from '@/lib/types';
 import { format } from 'date-fns';
 import { addSubscription, deleteSubscription } from '@/lib/db/finance';
+import { getDaysRemaining } from '@/lib/utils';
 import {
     Dialog,
     DialogContent,
@@ -180,27 +181,34 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                             No active subscriptions tracked.
                         </div>
                     ) : (
-                        subscriptions.map(sub => (
-                            <div key={sub.id} className="flex items-center justify-between group p-2 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-all">
-                                <div className="flex gap-3 items-center">
-                                    <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg h-9 w-9 flex items-center justify-center">
-                                        <Calendar className="h-4 w-4 text-slate-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold">{sub.name}</p>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-slate-500">
-                                                {currency}{sub.amount} / {sub.billingInterval > 1 ? `${sub.billingInterval} ` : ''}{sub.billingCycle.replace('ly', '')}{sub.billingInterval > 1 ? 's' : ''}
-                                            </span>
-                                            <Badge variant="outline" className="h-4 text-[10px] px-1 uppercase">{format(sub.nextBillingDate, 'MMM d')}</Badge>
+                        subscriptions.map(sub => {
+                            const daysLeft = getDaysRemaining(sub.nextBillingDate);
+                            const isNear = daysLeft <= 3 && daysLeft >= 0;
+
+                            return (
+                                <div key={sub.id} className="flex items-center justify-between group p-2 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-all">
+                                    <div className="flex gap-3 items-center">
+                                        <div className={`p-2 rounded-lg h-9 w-9 flex items-center justify-center ${isNear ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                                            <Calendar className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold">{sub.name}</p>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-slate-500">
+                                                    {currency}{sub.amount} / {sub.billingInterval > 1 ? `${sub.billingInterval} ` : ''}{sub.billingCycle.replace('ly', '')}{sub.billingInterval > 1 ? 's' : ''}
+                                                </span>
+                                                <Badge variant={isNear ? "destructive" : "outline"} className="h-4 text-[10px] px-1 uppercase">
+                                                    {daysLeft === 0 ? 'Today' : daysLeft < 0 ? 'Overdue' : `${daysLeft}d left`}
+                                                </Badge>
+                                            </div>
                                         </div>
                                     </div>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => handleDelete(sub.id)}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
                                 </div>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => handleDelete(sub.id)}>
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
             </CardContent>

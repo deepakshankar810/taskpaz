@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { CreateTransactionInput, Transaction, Subscription, SavingsGoal } from '@/lib/types';
+import { addMonths, addYears, isBefore, startOfDay } from 'date-fns';
 
 // Transactions
 export const addTransaction = async (userId: string, data: CreateTransactionInput) => {
@@ -121,6 +122,30 @@ export const docToSubscription = (item: any): Subscription => {
         createdAt: new Date(item.created_at),
         updatedAt: item.updated_at ? new Date(item.updated_at) : undefined,
     } as unknown as Subscription;
+};
+
+export const refreshSubscriptionDate = async (subscription: Subscription) => {
+    let nextDate = new Date(subscription.nextBillingDate);
+    const today = startOfDay(new Date());
+
+    // If it's today or in the past, move to next cycle
+    // Note: We use isBefore(nextDate, today) because if it's today, 
+    // it's still technically valid until the day is over, 
+    // but usually subscriptions refresh ON the billing date.
+    // Let's check if it's before today.
+    if (isBefore(nextDate, today)) {
+        while (isBefore(nextDate, today)) {
+            if (subscription.billingCycle === 'monthly') {
+                nextDate = addMonths(nextDate, subscription.billingInterval || 1);
+            } else {
+                nextDate = addYears(nextDate, subscription.billingInterval || 1);
+            }
+        }
+
+        await updateSubscription(subscription.id, { nextBillingDate: nextDate });
+        return nextDate;
+    }
+    return null;
 };
 
 // Savings Goals
