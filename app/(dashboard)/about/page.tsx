@@ -1,6 +1,6 @@
 'use client';
 
-import { Github, Linkedin, Globe, Mail, Sparkles, Zap, Shield, Heart, Code2, Microscope, LineChart } from 'lucide-react';
+import { Github, Linkedin, Globe, Mail, Sparkles, Zap, Shield, Heart, Code2, Microscope, LineChart, CheckSquare, Focus, Wallet, BookOpen, BarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
