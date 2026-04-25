@@ -5,17 +5,18 @@ import { Play, Pause, RotateCcw, Plus, Minus, Flame, Coffee, BookOpen, Code2, Du
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import * as timerStore from '@/lib/focusTimerStore';
 
 const PRESETS = [
-  { label: 'Quick Focus', minutes: 15, icon: Flame, color: 'from-orange-400 to-amber-500' },
-  { label: 'Deep Work', minutes: 50, icon: Code2, color: 'from-blue-500 to-indigo-600' },
-  { label: 'Pomodoro', minutes: 25, icon: Flame, color: 'from-red-400 to-rose-500' },
-  { label: 'Short Break', minutes: 5, icon: Coffee, color: 'from-teal-400 to-cyan-500' },
-  { label: 'Long Break', minutes: 15, icon: Coffee, color: 'from-green-400 to-emerald-500' },
-  { label: 'Reading', minutes: 30, icon: BookOpen, color: 'from-purple-400 to-violet-500' },
-  { label: 'Workout', minutes: 45, icon: Dumbbell, color: 'from-pink-400 to-fuchsia-500' },
-  { label: 'Creative', minutes: 60, icon: Music, color: 'from-yellow-400 to-orange-500' },
+  { label: 'Quick Focus', minutes: 15, icon: Flame, color: 'bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800' },
+  { label: 'Pomodoro', minutes: 25, icon: Flame, color: 'bg-red-100 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800' },
+  { label: 'Deep Work', minutes: 50, icon: Code2, color: 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800' },
+  { label: 'Short Break', minutes: 5, icon: Coffee, color: 'bg-teal-100 text-teal-600 border-teal-200 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800' },
+  { label: 'Long Break', minutes: 15, icon: Coffee, color: 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' },
+  { label: 'Reading', minutes: 30, icon: BookOpen, color: 'bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800' },
+  { label: 'Workout', minutes: 45, icon: Dumbbell, color: 'bg-pink-100 text-pink-600 border-pink-200 dark:bg-pink-900/20 dark:text-pink-400 dark:border-pink-800' },
+  { label: 'Creative', minutes: 60, icon: Music, color: 'bg-yellow-100 text-yellow-600 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800' },
 ];
 
 const SESSION_LOG_KEY = 'focus_session_log';
@@ -39,12 +40,10 @@ export default function FocusPage() {
   const [customMinutes, setCustomMinutes] = useState(25);
   const [customLabel, setCustomLabel] = useState('Focus Session');
   const [sessionLog, setSessionLog] = useState<SessionEntry[]>([]);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const unsub = timerStore.subscribe((s) => {
       setTimerState(s);
-      // When timer hits zero, log the session
       if (s.timeLeft === 0 && !s.isRunning && s.totalSeconds > 0) {
         const entry: SessionEntry = {
           label: s.label,
@@ -59,10 +58,8 @@ export default function FocusPage() {
       }
     });
 
-    // Load session log
     const saved = localStorage.getItem(SESSION_LOG_KEY);
     if (saved) setSessionLog(JSON.parse(saved));
-    setMounted(true);
 
     return () => { unsub(); };
   }, []);
@@ -80,38 +77,43 @@ export default function FocusPage() {
 
   const { timeLeft, totalSeconds, isRunning, label } = timerState;
   const progress = totalSeconds > 0 ? ((totalSeconds - timeLeft) / totalSeconds) * 100 : 0;
-  const circumference = 2 * Math.PI * 110; // radius 110
+  const radius = 110;
+  const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - progress / 100);
-
   const totalFocused = sessionLog.reduce((acc, s) => acc + s.minutes, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white">
-      <div className="max-w-6xl mx-auto px-6 py-10 space-y-10">
+    <div className="space-y-6 p-6 md:p-10 lg:p-14">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold">Focus Mode</h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">Set your intention, start the timer, get things done.</p>
+      </div>
 
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Focus Mode</h1>
-          <p className="text-slate-400 mt-1">Set your intention, start your timer, get things done.</p>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: Timer + Controls */}
+        <div className="lg:col-span-2 space-y-6">
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* --- Left: Timer --- */}
-          <div className="lg:col-span-2 space-y-8">
+          {/* Main Timer Card */}
+          <Card>
+            <CardContent className="flex flex-col items-center gap-6 py-10">
+              {/* Session label */}
+              <span className="text-sm font-medium text-slate-500 dark:text-slate-400 tracking-wide uppercase">{label}</span>
 
-            {/* Circular Timer */}
-            <div className="flex flex-col items-center gap-6 bg-white/5 border border-white/10 rounded-2xl p-10 backdrop-blur-sm">
-              {/* Label */}
-              <div className="text-slate-300 font-medium text-lg tracking-wide">{label}</div>
-
-              {/* SVG Circle */}
+              {/* Circular progress */}
               <div className="relative">
                 <svg width="260" height="260" className="-rotate-90">
-                  <circle cx="130" cy="130" r="110" stroke="rgba(255,255,255,0.08)" strokeWidth="12" fill="none" />
                   <circle
-                    cx="130" cy="130" r="110"
-                    stroke="url(#timerGradient)"
-                    strokeWidth="12"
+                    cx="130" cy="130" r={radius}
+                    stroke="currentColor"
+                    strokeWidth="10"
+                    fill="none"
+                    className="text-slate-100 dark:text-slate-800"
+                  />
+                  <circle
+                    cx="130" cy="130" r={radius}
+                    stroke="url(#focusGrad)"
+                    strokeWidth="10"
                     fill="none"
                     strokeLinecap="round"
                     strokeDasharray={circumference}
@@ -119,69 +121,63 @@ export default function FocusPage() {
                     style={{ transition: 'stroke-dashoffset 1s linear' }}
                   />
                   <defs>
-                    <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <linearGradient id="focusGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor="#6366f1" />
                       <stop offset="100%" stopColor="#3b82f6" />
                     </linearGradient>
                   </defs>
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-5xl font-mono font-bold tabular-nums tracking-tight">
+                  <span className={`text-5xl font-mono font-bold tabular-nums tracking-tight ${isRunning ? 'text-blue-600 dark:text-blue-400' : ''}`}>
                     {formatTime(timeLeft)}
                   </span>
-                  <span className="text-slate-400 text-sm mt-1">{Math.round(progress)}% complete</span>
+                  <span className="text-slate-400 text-xs mt-1">{Math.round(progress)}% complete</span>
                 </div>
               </div>
 
               {/* Controls */}
               <div className="flex items-center gap-4">
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="h-12 w-12 rounded-full border-white/20 bg-white/5 hover:bg-white/10 text-white"
-                  onClick={timerStore.resetTimer}
-                >
+                <Button size="icon" variant="outline" className="h-12 w-12 rounded-full" onClick={timerStore.resetTimer}>
                   <RotateCcw className="h-5 w-5" />
                 </Button>
                 <Button
-                  className={`h-16 w-16 rounded-full text-white font-bold shadow-lg shadow-blue-500/30 ${
+                  className={`h-16 w-16 rounded-full font-bold shadow-lg shadow-blue-500/20 ${
                     isRunning
-                      ? 'bg-white/20 hover:bg-white/30'
-                      : 'bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500'
+                      ? 'bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white'
+                      : 'bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white'
                   }`}
                   onClick={() => isRunning ? timerStore.pauseTimer() : timerStore.startTimer()}
                 >
                   {isRunning ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7 ml-0.5" />}
                 </Button>
-                <div className="h-12 w-12" /> {/* Spacer for centering */}
+                <div className="h-12 w-12" />
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Custom Timer Settings */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm space-y-5">
-              <h3 className="font-semibold text-slate-200 flex items-center gap-2">
-                <Pencil className="h-4 w-4 text-blue-400" />
+          {/* Custom Timer */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Pencil className="h-4 w-4 text-blue-500" />
                 Set Custom Timer
-              </h3>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-slate-400 text-xs uppercase tracking-wider">Label</Label>
+                  <Label className="text-xs text-slate-500 uppercase tracking-wider">Label</Label>
                   <Input
                     value={customLabel}
                     onChange={e => setCustomLabel(e.target.value)}
                     placeholder="e.g. Deep Work"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-600"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-slate-400 text-xs uppercase tracking-wider">Duration (minutes)</Label>
+                  <Label className="text-xs text-slate-500 uppercase tracking-wider">Duration (minutes)</Label>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="border-white/10 bg-white/5 hover:bg-white/10 text-white h-9 w-9"
-                      onClick={() => setCustomMinutes(m => Math.max(1, m - 5))}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0"
+                      onClick={() => setCustomMinutes(m => Math.max(1, m - 5))}>
                       <Minus className="h-3 w-3" />
                     </Button>
                     <Input
@@ -189,78 +185,78 @@ export default function FocusPage() {
                       value={customMinutes}
                       onChange={e => setCustomMinutes(Number(e.target.value))}
                       min={1}
-                      className="bg-white/5 border-white/10 text-white text-center w-16 h-9"
+                      className="text-center h-9"
                     />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="border-white/10 bg-white/5 hover:bg-white/10 text-white h-9 w-9"
-                      onClick={() => setCustomMinutes(m => m + 5)}
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0"
+                      onClick={() => setCustomMinutes(m => m + 5)}>
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
                 <div className="flex items-end">
-                  <Button
-                    onClick={applyCustom}
-                    className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 h-9"
-                  >
-                    Set Timer
-                  </Button>
+                  <Button onClick={applyCustom} className="w-full h-9">Set Timer</Button>
                 </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Presets */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-slate-200">Quick Presets</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {PRESETS.map(preset => (
-                  <button
-                    key={preset.label}
-                    onClick={() => applyPreset(preset)}
-                    className={`group relative overflow-hidden rounded-xl p-4 text-left bg-white/5 border border-white/10 hover:border-white/20 transition-all hover:scale-105 cursor-pointer`}
-                  >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${preset.color} opacity-0 group-hover:opacity-20 transition-opacity`} />
-                    <preset.icon className="h-5 w-5 mb-2 text-slate-300" />
-                    <p className="text-sm font-medium text-white">{preset.label}</p>
-                    <p className="text-xs text-slate-400">{preset.minutes}m</p>
-                  </button>
-                ))}
-              </div>
+          {/* Presets */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Quick Presets</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {PRESETS.map(preset => (
+                <button
+                  key={preset.label}
+                  onClick={() => applyPreset(preset)}
+                  className={`flex flex-col gap-2 rounded-xl p-4 text-left border transition-all hover:scale-105 active:scale-95 ${preset.color}`}
+                >
+                  <preset.icon className="h-5 w-5" />
+                  <div>
+                    <p className="text-sm font-semibold">{preset.label}</p>
+                    <p className="text-xs opacity-70">{preset.minutes}m</p>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
+        </div>
 
-          {/* --- Right: Stats & Log --- */}
-          <div className="space-y-6">
-            {/* Stats */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm space-y-4">
-              <h3 className="font-semibold text-slate-200">Today's Stats</h3>
-              <div className="text-4xl font-bold text-blue-400">{totalFocused}m</div>
-              <p className="text-slate-400 text-sm">Total focused time</p>
-              <div className="text-slate-400 text-sm">
-                {sessionLog.length} session{sessionLog.length !== 1 ? 's' : ''} completed
+        {/* Right: Stats & Session Log */}
+        <div className="space-y-6">
+          {/* Stats */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Session Stats</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">{totalFocused}m</div>
+                <p className="text-slate-500 text-sm mt-1">Total focused time</p>
               </div>
-            </div>
+              <div className="h-px bg-slate-100 dark:bg-slate-800" />
+              <div className="text-slate-600 dark:text-slate-400 text-sm">
+                <span className="font-semibold text-slate-900 dark:text-white">{sessionLog.length}</span> session{sessionLog.length !== 1 ? 's' : ''} completed
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Session Log */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm space-y-3">
-              <h3 className="font-semibold text-slate-200">Session Log</h3>
+          {/* Session Log */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Session Log</CardTitle>
+            </CardHeader>
+            <CardContent>
               {sessionLog.length === 0 ? (
-                <p className="text-slate-500 text-sm text-center py-6">
-                  No sessions yet. Start your first focus session!
+                <p className="text-slate-400 text-sm text-center py-8">
+                  No sessions yet.<br />Start your first focus session!
                 </p>
               ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                   {sessionLog.map((entry, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 p-3 bg-white/5 rounded-lg"
-                    >
-                      <CheckCircle2 className="h-4 w-4 text-green-400 flex-shrink-0" />
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{entry.label}</p>
+                        <p className="text-sm font-medium truncate">{entry.label}</p>
                         <p className="text-xs text-slate-400">
                           {entry.minutes}m · {new Date(entry.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
@@ -269,8 +265,8 @@ export default function FocusPage() {
                   ))}
                 </div>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
