@@ -69,11 +69,6 @@ export default function AboutPage() {
             <h2 className="text-3xl font-bold tracking-tight px-2">The Creator</h2>
             <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
               <CardContent className="p-0 flex flex-col md:flex-row">
-                <div className="md:w-1/3 bg-slate-100 dark:bg-slate-800 flex items-center justify-center p-12">
-                   <div className="h-32 w-32 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-4xl font-black text-white shadow-xl rotate-3">
-                      DSP
-                   </div>
-                </div>
                 <div className="flex-1 p-8 md:p-10 space-y-6">
                   <div>
                     <h3 className="text-2xl font-bold">Deepak S P</h3>
