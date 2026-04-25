@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 
 interface Station {
   id: string;
@@ -23,11 +23,14 @@ interface MusicContextType {
   isPlaying: boolean;
   isRepeating: boolean;
   isSearching: boolean;
+  currentTime: number;
+  duration: number;
   togglePlay: () => void;
   toggleRepeat: () => void;
   nextStation: () => void;
   prevStation: () => void;
   searchSong: (query: string) => Promise<void>;
+  seek: (time: number) => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -37,28 +40,44 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRepeating, setIsRepeating] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  
+  const playerRef = useRef<any>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const togglePlay = () => setIsPlaying(!isPlaying);
+  const togglePlay = () => {
+    if (playerRef.current) {
+      if (isPlaying) {
+        playerRef.current.pauseVideo();
+      } else {
+        playerRef.current.playVideo();
+      }
+    }
+    setIsPlaying(!isPlaying);
+  };
+
   const toggleRepeat = () => setIsRepeating(!isRepeating);
 
   const nextStation = () => {
     const index = INITIAL_STATIONS.findIndex(s => s.id === currentStation.id);
-    if (index !== -1) {
-      setCurrentStation(INITIAL_STATIONS[(index + 1) % INITIAL_STATIONS.length]);
-    } else {
-      setCurrentStation(INITIAL_STATIONS[0]);
-    }
+    const nextIndex = index !== -1 ? (index + 1) % INITIAL_STATIONS.length : 0;
+    setCurrentStation(INITIAL_STATIONS[nextIndex]);
     setIsPlaying(true);
   };
 
   const prevStation = () => {
     const index = INITIAL_STATIONS.findIndex(s => s.id === currentStation.id);
-    if (index !== -1) {
-      setCurrentStation(INITIAL_STATIONS[(index - 1 + INITIAL_STATIONS.length) % INITIAL_STATIONS.length]);
-    } else {
-      setCurrentStation(INITIAL_STATIONS[0]);
-    }
+    const prevIndex = index !== -1 ? (index - 1 + INITIAL_STATIONS.length) % INITIAL_STATIONS.length : 0;
+    setCurrentStation(INITIAL_STATIONS[prevIndex]);
     setIsPlaying(true);
+  };
+
+  const seek = (time: number) => {
+    if (playerRef.current) {
+      playerRef.current.seekTo(time, true);
+      setCurrentTime(time);
+    }
   };
 
   const searchSong = async (query: string) => {
@@ -89,58 +108,99 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
     (window as any).onYouTubeIframeAPIReady = () => {
       console.log('YT API Ready');
+      initializePlayer(currentStation.id);
+    };
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
-  const onPlayerStateChange = (event: any) => {
-    // YT.PlayerState.ENDED is 0
-    if (event.data === 0) {
-      if (!isRepeating) {
-        setCurrentStation(INITIAL_STATIONS[0]); // Back to Lofi
-        setIsPlaying(true);
+  useEffect(() => {
+    if (playerRef.current && playerRef.current.loadVideoById) {
+      playerRef.current.loadVideoById(currentStation.id);
+      if (isPlaying) {
+        playerRef.current.playVideo();
+      } else {
+        playerRef.current.pauseVideo();
       }
+    } else if ((window as any).YT && (window as any).YT.Player) {
+      initializePlayer(currentStation.id);
     }
+  }, [currentStation.id]);
+
+  const initializePlayer = (videoId: string) => {
+    playerRef.current = new (window as any).YT.Player('yt-player-hidden', {
+      height: '1',
+      width: '1',
+      videoId: videoId,
+      playerVars: {
+        autoplay: 1,
+        controls: 0,
+        showinfo: 0,
+        rel: 0,
+        enablejsapi: 1,
+      },
+      events: {
+        onReady: (event: any) => {
+          if (isPlaying) event.target.playVideo();
+          startTimer();
+        },
+        onStateChange: (event: any) => {
+          // YT.PlayerState.ENDED = 0
+          if (event.data === 0) {
+            if (isRepeating) {
+              event.target.playVideo();
+            } else {
+              // Fallback to Lofi
+              setCurrentStation(INITIAL_STATIONS[0]);
+              setIsPlaying(true);
+            }
+          }
+          // YT.PlayerState.PLAYING = 1
+          if (event.data === 1) {
+            setIsPlaying(true);
+            setDuration(event.target.getDuration());
+          }
+          // YT.PlayerState.PAUSED = 2
+          if (event.data === 2) {
+            setIsPlaying(false);
+          }
+        },
+      },
+    });
   };
 
-  const iframeRef = React.useRef<HTMLIFrameElement>(null);
-
-  useEffect(() => {
-    if (isPlaying && (window as any).YT && (window as any).YT.Player) {
-      new (window as any).YT.Player('yt-player', {
-        events: {
-          'onStateChange': onPlayerStateChange
-        }
-      });
-    }
-  }, [isPlaying, currentStation.id]);
+  const startTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      if (playerRef.current && playerRef.current.getCurrentTime) {
+        setCurrentTime(playerRef.current.getCurrentTime());
+      }
+    }, 1000);
+  };
 
   return (
     <MusicContext.Provider value={{ 
       currentStation, 
       isPlaying, 
       isRepeating,
-      isSearching, 
+      isSearching,
+      currentTime,
+      duration,
       togglePlay, 
       toggleRepeat,
       nextStation, 
       prevStation, 
-      searchSong 
+      searchSong,
+      seek
     }}>
       {children}
       
       {/* Persistent Audio Engine */}
-      {isPlaying && (
-        <div className="hidden pointer-events-none opacity-0 invisible overflow-hidden w-0 h-0">
-          <iframe
-            id="yt-player"
-            key={currentStation.id + (isRepeating ? '-repeat' : '')}
-            width="1"
-            height="1"
-            src={`https://www.youtube.com/embed/${currentStation.id}?autoplay=1&mute=0&controls=0&showinfo=0&enablejsapi=1${isRepeating ? `&loop=1&playlist=${currentStation.id}` : ''}`}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          ></iframe>
-        </div>
-      )}
+      <div className="fixed -bottom-10 -right-10 opacity-0 pointer-events-none overflow-hidden w-0 h-0">
+        <div id="yt-player-hidden"></div>
+      </div>
     </MusicContext.Provider>
   );
 }

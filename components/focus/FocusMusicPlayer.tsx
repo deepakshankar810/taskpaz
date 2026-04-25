@@ -8,13 +8,37 @@ import { Input } from '@/components/ui/input';
 import { useMusic } from '@/components/providers/MusicProvider';
 
 export function FocusMusicPlayer() {
-  const { currentStation, isPlaying, isRepeating, isSearching, togglePlay, toggleRepeat, nextStation, prevStation, searchSong } = useMusic();
+  const { 
+    currentStation, 
+    isPlaying, 
+    isRepeating, 
+    isSearching, 
+    currentTime, 
+    duration, 
+    togglePlay, 
+    toggleRepeat, 
+    nextStation, 
+    prevStation, 
+    searchSong,
+    seek 
+  } = useMusic();
+  
   const [searchQuery, setSearchQuery] = useState('');
   
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     await searchSong(searchQuery);
     setSearchQuery('');
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    seek(Number(e.target.value));
   };
 
   return (
@@ -64,6 +88,22 @@ export function FocusMusicPlayer() {
           <div className="min-w-0">
             <h4 className="font-bold text-xs truncate">{currentStation.name}</h4>
             <p className="text-[10px] text-indigo-300 truncate">{currentStation.author}</p>
+          </div>
+        </div>
+
+        {/* Spotify-style Progress Bar */}
+        <div className="space-y-1">
+          <input 
+            type="range" 
+            min="0" 
+            max={duration || 100} 
+            value={currentTime} 
+            onChange={handleSeek}
+            className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-white"
+          />
+          <div className="flex justify-between text-[10px] text-indigo-300 font-medium">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
           </div>
         </div>
 
