@@ -31,11 +31,11 @@ export default function AboutPage() {
           <CardContent className="p-8 md:p-12 grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Our Mission</h2>
-              <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
-                Taskpaz was born from a simple realization: productivity isn't just about managing tasks; it's about managing your **Focus** and **Energy**. 
+              <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                Taskpaz is an advanced productivity ecosystem designed to bridge the gap between structured planning and psychological flow.
               </p>
               <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
-                By combining behavioral science with modern engineering, we've built a sanctuary for deep work. Whether you're a developer, a researcher, or a creative, Taskpaz provides the tools to enter your flow state and stay there.
+                Our mission is to empower professionals with a scientifically-grounded workspace that harmonizes task management, financial tracking, and distraction-free focus—all within a single, high-performance interface.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -66,47 +66,40 @@ export default function AboutPage() {
         {/* Creator Section */}
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <h2 className="text-3xl font-bold tracking-tight px-2">Meet the Creator</h2>
+            <h2 className="text-3xl font-bold tracking-tight px-2">The Creator</h2>
             <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
               <CardContent className="p-0 flex flex-col md:flex-row">
                 <div className="md:w-1/3 bg-slate-100 dark:bg-slate-800 flex items-center justify-center p-12">
-                   <div className="relative group">
-                     <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                     <div className="relative h-40 w-40 rounded-full bg-white dark:bg-slate-900 flex items-center justify-center text-5xl font-black text-blue-600 shadow-inner">
-                        DSP
-                     </div>
+                   <div className="h-32 w-32 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-4xl font-black text-white shadow-xl rotate-3">
+                      DSP
                    </div>
                 </div>
                 <div className="flex-1 p-8 md:p-10 space-y-6">
                   <div>
                     <h3 className="text-2xl font-bold">Deepak S P</h3>
-                    <p className="text-blue-600 dark:text-blue-400 font-medium">Biotechnologist & Data Science Enthusiast</p>
+                    <p className="text-blue-600 dark:text-blue-400 font-medium">Associate STEM Content Analyst & Biotechnologist</p>
                   </div>
                   
-                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed italic">
-                    "Bridging the gap between Life Sciences and Technology to build tools that solve real-world problems."
-                  </p>
-
                   <div className="space-y-4">
                     <div className="flex items-start gap-4">
                       <Microscope className="h-5 w-5 text-indigo-500 mt-1" />
                       <div>
                         <p className="text-sm font-bold">Scientific Background</p>
-                        <p className="text-xs text-slate-500">M.Sc in Biotechnology. Specialist in Molecular Biology and Computational Chemistry.</p>
+                        <p className="text-xs text-slate-500">M.Sc in Biotechnology from Amrita Vishwa Vidyapeetham. Specializing in Molecular Biology and Computational Chemistry.</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-4">
                       <Code2 className="h-5 w-5 text-blue-500 mt-1" />
                       <div>
-                        <p className="text-sm font-bold">Tech Expertise</p>
-                        <p className="text-xs text-slate-500">Proficient in Python, SQL, and Full-Stack Development. Creator of juProt (Springer Nature).</p>
+                        <p className="text-sm font-bold">Technical Contributions</p>
+                        <p className="text-xs text-slate-500">Proficient in Python, SQL, and Data Science. Creator of juProt, published in Springer Nature.</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-4">
                       <LineChart className="h-5 w-5 text-green-500 mt-1" />
                       <div>
-                        <p className="text-sm font-bold">Data Strategy</p>
-                        <p className="text-xs text-slate-500">Associate STEM Content Analyst at Clarivate, specializing in biological sequence indexing.</p>
+                        <p className="text-sm font-bold">Professional Role</p>
+                        <p className="text-xs text-slate-500">Currently at Clarivate, focusing on biological sequence indexing and STEM content analysis.</p>
                       </div>
                     </div>
                   </div>
