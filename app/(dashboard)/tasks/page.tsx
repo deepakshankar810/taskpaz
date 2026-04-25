@@ -15,6 +15,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { KanbanBoard } from '@/components/task/KanbanBoard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ImportExport } from '@/components/task/ImportExport';
+import { CalendarGrid } from '@/components/task/CalendarGrid';
 import { isSameDay } from 'date-fns';
 import {
   Dialog,
@@ -45,7 +47,8 @@ function TasksContent() {
     return (
       task.title?.toLowerCase().includes(searchQuery) ||
       task.description?.toLowerCase().includes(searchQuery) ||
-      task.category?.toLowerCase().includes(searchQuery)
+      task.category?.toLowerCase().includes(searchQuery) ||
+      task.tags?.some(tag => tag.toLowerCase().includes(searchQuery))
     );
   });
 
@@ -66,7 +69,7 @@ function TasksContent() {
     }
   }, [error]);
 
-  const handleCreateTask = (data: CreateTaskInput) => {
+  const handleCreateTask = (data: any) => {
     if (!user) return;
 
     // Generate a Firestore-like random ID (20 chars)
@@ -97,7 +100,7 @@ function TasksContent() {
     });
   };
 
-  const handleEditTask = (data: CreateTaskInput) => {
+  const handleEditTask = (data: any) => {
     if (!user || !taskToEdit) return;
 
     const taskId = taskToEdit.id;
@@ -179,37 +182,44 @@ function TasksContent() {
 
   return (
     <div className="space-y-6 p-6 md:p-10 lg:p-14">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Tasks</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
+          <p className="text-slate-500">Manage, track and organize your work.</p>
+        </div>
 
-        {/* Unified "New Task" Button Logic */}
-        <Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              {activeTab === 'calendar' ? 'Schedule Task' : 'New Task'}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {activeTab === 'calendar' && date
-                  ? `Add Task for ${date.toLocaleDateString()}`
-                  : 'Create New Task'}
-              </DialogTitle>
-            </DialogHeader>
-            <TaskForm
-              onSubmit={handleCreateTask}
-              isLoading={isSaving}
-              defaultValues={{
-                // If in calendar mode, pre-fill the selected date
-                dueDate: activeTab === 'calendar' && date
-                  ? date.toLocaleDateString('en-CA')
-                  : undefined
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-3">
+          <ImportExport tasks={tasks} />
+          
+          <Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
+            <DialogTrigger asChild>
+              <Button className="shadow-lg shadow-blue-500/20">
+                <Plus className="mr-2 h-4 w-4" />
+                New Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl p-0 overflow-hidden border-none shadow-2xl">
+              <DialogHeader className="p-6 pb-0">
+                <DialogTitle className="text-2xl font-bold">
+                  {activeTab === 'calendar' && date
+                    ? `Schedule Task for ${date.toLocaleDateString()}`
+                    : 'Create New Task'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="p-6 pt-4">
+                <TaskForm
+                  onSubmit={handleCreateTask}
+                  isLoading={isSaving}
+                  defaultValues={{
+                    dueDate: activeTab === 'calendar' && date
+                      ? date.toLocaleDateString('en-CA')
+                      : undefined
+                  }}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
 
         {/* Edit Task Dialog */}
         <Dialog open={isEditTaskOpen} onOpenChange={setIsEditTaskOpen}>
@@ -287,58 +297,15 @@ function TasksContent() {
         </TabsContent>
 
         {/* CALENDAR VIEW */}
-        <TabsContent value="calendar">
-          <div className="grid gap-6 md:grid-cols-12">
-            <Card className="md:col-span-4">
-              <CardHeader>
-                <CardTitle>Select Date</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  className="rounded-md border"
-                />
-              </CardContent>
-            </Card>
-
-            <Card className="md:col-span-8">
-              <CardHeader>
-                <CardTitle>Schedule for {date?.toLocaleDateString()}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedDateTasks.length === 0 ? (
-                  <div className="flex h-[300px] items-center justify-center text-slate-500 border-2 border-dashed rounded-lg">
-                    No tasks scheduled for this day.
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {selectedDateTasks.map(task => (
-                      <div key={task.id} className="flex items-center justify-between p-4 border rounded-lg bg-white dark:bg-slate-900 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          {task.status === 'completed' ? (
-                            <CheckCircle2 className="text-green-500 h-5 w-5" />
-                          ) : task.priority === 'urgent' ? (
-                            <AlertCircle className="text-red-500 h-5 w-5" />
-                          ) : (
-                            <Clock className="text-slate-400 h-5 w-5" />
-                          )}
-                          <div>
-                            <p className="font-medium">{task.title}</p>
-                            <p className="text-xs text-slate-500 uppercase">{task.status.replace('-', ' ')} • {task.priority}</p>
-                          </div>
-                        </div>
-                        <div className="text-sm font-medium text-slate-500">
-                          {task.dueDate ? new Date(task.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'All Day'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+        <TabsContent value="calendar" className="mt-0">
+          <CalendarGrid 
+            tasks={filteredTasks}
+            onDateClick={(d) => {
+              setDate(d);
+              setIsNewTaskOpen(true);
+            }}
+            onTaskClick={(task) => openEditModal(task)}
+          />
         </TabsContent>
       </Tabs>
     </div>

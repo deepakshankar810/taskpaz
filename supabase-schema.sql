@@ -43,7 +43,65 @@ begin
   if not exists (select 1 from information_schema.columns where table_name='tasks' and column_name='time_spent') then
     alter table tasks add column time_spent integer default 0;
   end if;
+  -- New feature columns
+  if not exists (select 1 from information_schema.columns where table_name='tasks' and column_name='tags') then
+    alter table tasks add column tags text[] default '{}';
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='tasks' and column_name='estimated_minutes') then
+    alter table tasks add column estimated_minutes integer default null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='tasks' and column_name='dependencies') then
+    alter table tasks add column dependencies uuid[] default '{}';
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='tasks' and column_name='shared_with') then
+    alter table tasks add column shared_with jsonb default '[]'::jsonb;
+  end if;
 end $$;
+
+-- Journal Entries Table
+create table if not exists journal_entries (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  date date not null,
+  content text not null default '',
+  mood text,
+  completed_task_ids uuid[] default '{}',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(user_id, date)
+);
+
+-- Task Collaborators Table
+create table if not exists task_collaborators (
+  id uuid default gen_random_uuid() primary key,
+  task_id uuid references tasks(id) on delete cascade not null,
+  invited_email text not null,
+  access text not null default 'read' check (access in ('read', 'edit')),
+  status text not null default 'pending' check (status in ('pending', 'accepted')),
+  created_at timestamptz default now(),
+  unique(task_id, invited_email)
+);
+
+-- Enable RLS on new tables
+alter table journal_entries enable row level security;
+alter table task_collaborators enable row level security;
+
+-- RLS Policies for journal_entries
+do $$
+begin
+  if not exists (select 1 from pg_policies where policyname = 'Users can manage own journal') then
+    create policy "Users can manage own journal" on journal_entries for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  end if;
+  if not exists (select 1 from pg_policies where policyname = 'Users can manage own collaborators') then
+    create policy "Users can manage own collaborators" on task_collaborators for all
+      using (exists (select 1 from tasks where tasks.id = task_collaborators.task_id and tasks.user_id = auth.uid()))
+      with check (exists (select 1 from tasks where tasks.id = task_collaborators.task_id and tasks.user_id = auth.uid()));
+  end if;
+end $$;
+
+-- Indexes for new tables
+create index if not exists journal_entries_user_date_idx on journal_entries(user_id, date);
+create index if not exists task_collaborators_task_idx on task_collaborators(task_id);
 
 -- Projects Table
 create table if not exists projects (

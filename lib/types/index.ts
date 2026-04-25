@@ -40,6 +40,9 @@ export interface Task {
   subtasks?: Subtask[];
   recurringPattern?: 'none' | 'daily' | 'weekly' | 'monthly';
   timeSpent?: number;
+  estimatedMinutes?: number;
+  dependencies?: string[];
+  sharedWith?: string[];
 }
 
 export interface CreateTaskInput {
@@ -53,6 +56,9 @@ export interface CreateTaskInput {
   orderIndex?: number;
   subtasks?: Subtask[];
   recurringPattern?: 'none' | 'daily' | 'weekly' | 'monthly';
+  estimatedMinutes?: number;
+  dependencies?: string[];
+  sharedWith?: string[];
 }
 
 export interface UpdateTaskInput extends Partial<CreateTaskInput> {
@@ -133,5 +139,34 @@ export interface AppNotification {
   message: string;
   type: 'info' | 'success' | 'warning' | 'error';
   read: boolean;
+  createdAt: Date;
+}
+
+// ---- New Feature Types ----
+
+export interface JournalEntry {
+  id: string;
+  userId: string;
+  date: string; // ISO date string YYYY-MM-DD
+  content: string; // HTML from rich text editor
+  mood?: 'great' | 'good' | 'okay' | 'bad' | 'terrible';
+  completedTaskIds?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateJournalEntryInput {
+  date: string;
+  content: string;
+  mood?: JournalEntry['mood'];
+  completedTaskIds?: string[];
+}
+
+export interface TaskCollaborator {
+  id: string;
+  taskId: string;
+  invitedEmail: string;
+  access: 'read' | 'edit';
+  status: 'pending' | 'accepted';
   createdAt: Date;
 }

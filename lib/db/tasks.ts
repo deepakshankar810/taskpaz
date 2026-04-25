@@ -3,12 +3,35 @@ import type { Task, CreateTaskInput, UpdateTaskInput, TaskStatus, TaskPriority, 
 
 const TASKS_TABLE = 'tasks';
 
+const mapTaskRow = (data: any): Task => ({
+  id: data.id,
+  userId: data.user_id,
+  title: data.title,
+  description: data.description,
+  status: data.status,
+  priority: data.priority,
+  category: data.category,
+  dueDate: data.due_date ? new Date(data.due_date) : undefined,
+  projectId: data.project_id,
+  completedAt: data.completed_at ? new Date(data.completed_at) : undefined,
+  createdAt: new Date(data.created_at),
+  updatedAt: new Date(data.updated_at),
+  orderIndex: data.order_index,
+  subtasks: data.subtasks || [],
+  recurringPattern: data.recurring_pattern,
+  timeSpent: data.time_spent,
+  tags: data.tags || [],
+  estimatedMinutes: data.estimated_minutes ?? undefined,
+  dependencies: data.dependencies || [],
+  sharedWith: data.shared_with || [],
+});
+
 export const createTask = async (userId: string, input: CreateTaskInput, id?: string): Promise<Task> => {
   try {
     console.log('[createTask] Starting...', { userId, title: input.title });
 
     const newTaskData = {
-      id: id || undefined, // Let Supabase generate if not provided
+      id: id || undefined,
       user_id: userId,
       title: input.title,
       description: input.description || '',
@@ -21,6 +44,10 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
       subtasks: input.subtasks || [],
       recurring_pattern: input.recurringPattern || null,
       time_spent: 0,
+      tags: input.tags || [],
+      estimated_minutes: input.estimatedMinutes || null,
+      dependencies: input.dependencies || [],
+      shared_with: input.sharedWith || [],
     };
 
     const { data, error } = await supabase
@@ -32,30 +59,13 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
     if (error) throw error;
 
     console.log('[createTask] Task created:', data.id);
-
-    return {
-      id: data.id,
-      userId: data.user_id,
-      title: data.title,
-      description: data.description,
-      status: data.status,
-      priority: data.priority,
-      category: data.category,
-      dueDate: data.due_date ? new Date(data.due_date) : undefined,
-      projectId: data.project_id,
-      completedAt: data.completed_at ? new Date(data.completed_at) : undefined,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-      orderIndex: data.order_index,
-      subtasks: data.subtasks || [],
-      recurringPattern: data.recurring_pattern,
-      timeSpent: data.time_spent,
-    } as Task;
+    return mapTaskRow(data);
   } catch (error) {
     console.error('[createTask] Error:', error);
     throw error;
   }
 };
+
 
 export const getUserTasks = async (
   userId: string,
@@ -83,24 +93,7 @@ export const getUserTasks = async (
 
     if (error) throw error;
 
-    return (data || []).map(task => ({
-      id: task.id,
-      userId: task.user_id,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      category: task.category,
-      dueDate: task.due_date ? new Date(task.due_date) : undefined,
-      projectId: task.project_id,
-      completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
-      createdAt: new Date(task.created_at),
-      updatedAt: new Date(task.updated_at),
-      orderIndex: task.order_index,
-      subtasks: task.subtasks || [],
-      recurringPattern: task.recurring_pattern,
-      timeSpent: task.time_spent,
-    } as Task));
+    return (data || []).map(mapTaskRow);
   } catch (error) {
     console.error('[getUserTasks] Error:', error);
     return [];
@@ -137,6 +130,10 @@ export const updateTask = async (taskId: string, updates: UpdateTaskInput): Prom
     if (updates.subtasks !== undefined) updateData.subtasks = updates.subtasks;
     if (updates.recurringPattern !== undefined) updateData.recurring_pattern = updates.recurringPattern;
     if (updates.timeSpent !== undefined) updateData.time_spent = updates.timeSpent;
+    if (updates.tags !== undefined) updateData.tags = updates.tags;
+    if (updates.estimatedMinutes !== undefined) updateData.estimated_minutes = updates.estimatedMinutes;
+    if (updates.dependencies !== undefined) updateData.dependencies = updates.dependencies;
+    if (updates.sharedWith !== undefined) updateData.shared_with = updates.sharedWith;
 
     const { error } = await supabase
       .from(TASKS_TABLE)

@@ -2,22 +2,26 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { CreateTaskInput, TaskPriority, TaskCategory } from '@/lib/types';
+import { CreateTaskInput, TaskPriority, TaskCategory, Subtask } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
-import { Plus, X } from 'lucide-react';
-import { Subtask } from '@/lib/types';
+import { Plus, X, Timer, Tag as TagIcon, Link as LinkIcon, Sparkles } from 'lucide-react';
+import { TagInput } from './TagInput';
+import { AIBreakdownButton } from './AIBreakdownButton';
+import { DependencySelector } from './DependencySelector';
 
 // Internal form state can have strings for dates (HTML input requirement)
 interface TaskFormValues extends Omit<CreateTaskInput, 'dueDate'> {
   dueDate?: string;
   dueTime?: string;
-  subtasks?: Subtask[];
-  recurringPattern?: 'none' | 'daily' | 'weekly' | 'monthly';
+  subtasks: Subtask[];
+  tags: string[];
+  dependencies: string[];
+  estimatedMinutes?: number;
 }
 
 interface TaskFormProps {
@@ -25,15 +29,46 @@ interface TaskFormProps {
   isLoading?: boolean;
   defaultValues?: Partial<TaskFormValues>;
   submitLabel?: string;
+  taskId?: string; // Needed for dependency exclusion
 }
 
-export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel }: TaskFormProps) {
+export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel, taskId }: TaskFormProps) {
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<TaskFormValues>({
-    defaultValues
+    defaultValues: {
+      subtasks: [],
+      tags: [],
+      dependencies: [],
+      priority: 'medium',
+      category: 'personal',
+      ...defaultValues
+    }
   });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const descriptionValue = watch('description');
+  const titleValue = watch('title');
   const subtasks = watch('subtasks') || [];
+  const tags = watch('tags') || [];
+  const dependencies = watch('dependencies') || [];
+
+  const handleAIResult = (result: any) => {
+    // Add new subtasks (merge with existing if any, or replace)
+    const newSubtasks = result.subtasks.map((st: any) => ({
+      id: crypto.randomUUID(),
+      title: st.title,
+      completed: false
+    }));
+    
+    setValue('subtasks', [...subtasks, ...newSubtasks]);
+    setValue('priority', result.suggestedPriority);
+    setValue('estimatedMinutes', result.estimatedMinutes);
+    
+    // Optionally prepend tip to description
+    if (result.tip) {
+      const currentDesc = descriptionValue || '';
+      setValue('description', `<p><strong>Pro Tip:</strong> ${result.tip}</p>${currentDesc}`);
+    }
+  };
 
   const addSubtask = () => {
     setValue('subtasks', [...subtasks, { id: crypto.randomUUID(), title: '', completed: false }]);
@@ -64,9 +99,12 @@ export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel }: Ta
         }
       }
 
+      const { dueDate: _, dueTime: __, ...rest } = data;
+      
       const result = onSubmit({
-        ...data,
-        dueDate: finalDueDate
+        ...rest,
+        dueDate: finalDueDate,
+        estimatedMinutes: data.estimatedMinutes ? Number(data.estimatedMinutes) : undefined
       });
 
       if (result instanceof Promise) {
@@ -82,123 +120,184 @@ export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel }: Ta
   const loading = isLoading || isSubmitting;
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">Title</Label>
-        <Input id="title" {...register('title', { required: true })} placeholder="Task title" />
-        {errors.title && <span className="text-xs text-red-500">Required</span>}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <RichTextEditor 
-          value={descriptionValue || ''} 
-          onChange={(val) => setValue('description', val)} 
-          placeholder="Task details, notes, links..." 
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6 max-h-[80vh] overflow-y-auto px-1 pb-4 scrollbar-hide">
+      <div className="space-y-4">
+        {/* Title & AI Button */}
         <div className="space-y-2">
-          <Label>Priority</Label>
-          <Select
-            defaultValue={defaultValues?.priority}
-            onValueChange={(v) => setValue('priority', v as TaskPriority)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="urgent">Urgent</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Category</Label>
-          <Select
-            defaultValue={defaultValues?.category}
-            onValueChange={(v) => setValue('category', v as TaskCategory)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="work">Work</SelectItem>
-              <SelectItem value="personal">Personal</SelectItem>
-              <SelectItem value="health">Health</SelectItem>
-              <SelectItem value="finance">Finance</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-4">
-        <div className="flex items-center justify-between">
-          <Label>Subtasks</Label>
-          <Button type="button" variant="ghost" size="sm" onClick={addSubtask} className="h-6 text-xs">
-            <Plus className="h-3 w-3 mr-1" /> Add
-          </Button>
-        </div>
-        {subtasks.length > 0 && (
-          <div className="space-y-2">
-            {subtasks.map((st, i) => (
-              <div key={st.id} className="flex gap-2 items-center">
-                <Input 
-                  value={st.title} 
-                  onChange={(e) => updateSubtask(i, e.target.value)}
-                  placeholder="Subtask..."
-                  className="h-8"
-                />
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removeSubtask(i)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <Label htmlFor="title" className="text-sm font-semibold">Title</Label>
+            <AIBreakdownButton 
+              title={titleValue} 
+              description={descriptionValue} 
+              onResult={handleAIResult}
+              disabled={loading}
+            />
           </div>
-        )}
+          <Input 
+            id="title" 
+            {...register('title', { required: true })} 
+            placeholder="What needs to be done?" 
+            className="text-lg font-medium h-12 focus-visible:ring-blue-500"
+          />
+          {errors.title && <span className="text-xs text-red-500">Title is required</span>}
+        </div>
+
+        {/* Description */}
+        <div className="space-y-2">
+          <Label htmlFor="description" className="text-sm font-semibold">Description</Label>
+          <RichTextEditor 
+            value={descriptionValue || ''} 
+            onChange={(val) => setValue('description', val)} 
+            placeholder="Add context, links, or notes..." 
+          />
+        </div>
+
+        {/* Priority & Category */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Priority</Label>
+            <Select
+              value={watch('priority')}
+              onValueChange={(v) => setValue('priority', v as TaskPriority)}
+            >
+              <SelectTrigger className="bg-white dark:bg-slate-900">
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Category</Label>
+            <Select
+              value={watch('category')}
+              onValueChange={(v) => setValue('category', v as TaskCategory)}
+            >
+              <SelectTrigger className="bg-white dark:bg-slate-900">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="work">Work</SelectItem>
+                <SelectItem value="personal">Personal</SelectItem>
+                <SelectItem value="health">Health</SelectItem>
+                <SelectItem value="finance">Finance</SelectItem>
+                <SelectItem value="shopping">Shopping</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Time Estimate & Recurring */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <Timer className="h-3 w-3 text-slate-400" />
+              Estimate (mins)
+            </Label>
+            <Input 
+              type="number" 
+              {...register('estimatedMinutes')} 
+              placeholder="e.g. 45" 
+              className="bg-white dark:bg-slate-900"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Recurring</Label>
+            <Select
+              value={watch('recurringPattern') || 'none'}
+              onValueChange={(v) => setValue('recurringPattern', v as any)}
+            >
+              <SelectTrigger className="bg-white dark:bg-slate-900">
+                <SelectValue placeholder="No repeat" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No repeat</SelectItem>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Due Date & Time */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="dueDate" className="text-sm font-semibold">Due Date</Label>
+            <Input id="dueDate" type="date" {...register('dueDate')} className="bg-white dark:bg-slate-900" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="dueTime" className="text-sm font-semibold">Due Time</Label>
+            <Input id="dueTime" type="time" {...register('dueTime')} className="bg-white dark:bg-slate-900" />
+          </div>
+        </div>
+
+        {/* Tags */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold flex items-center gap-2">
+            <TagIcon className="h-3 w-3 text-slate-400" />
+            Tags
+          </Label>
+          <TagInput 
+            tags={tags} 
+            onChange={(newTags) => setValue('tags', newTags)} 
+            placeholder="Work, urgent, home..." 
+          />
+        </div>
+
+        {/* Dependencies */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold flex items-center gap-2">
+            <LinkIcon className="h-3 w-3 text-slate-400" />
+            Dependencies
+          </Label>
+          <DependencySelector 
+            selectedIds={dependencies} 
+            onChange={(ids) => setValue('dependencies', ids)} 
+            excludeTaskId={taskId}
+          />
+        </div>
+
+        {/* Subtasks */}
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-semibold">Subtasks</Label>
+            <Button type="button" variant="ghost" size="sm" onClick={addSubtask} className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <Plus className="h-4 w-4 mr-1" /> Add Subtask
+            </Button>
+          </div>
+          {subtasks.length > 0 && (
+            <div className="space-y-2">
+              {subtasks.map((st, i) => (
+                <div key={st.id} className="flex gap-2 items-center animate-in slide-in-from-left-2 duration-200">
+                  <Input 
+                    value={st.title} 
+                    onChange={(e) => updateSubtask(i, e.target.value)}
+                    placeholder="Task step..."
+                    className="h-10 bg-white dark:bg-slate-900"
+                  />
+                  <Button type="button" variant="ghost" size="icon" className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => removeSubtask(i)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Recurring</Label>
-          <Select
-            defaultValue={defaultValues?.recurringPattern || 'none'}
-            onValueChange={(v) => setValue('recurringPattern', v as any)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="No repeat" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No repeat</SelectItem>
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          {/* Empty spacer or something else */}
-        </div>
+      <div className="pt-4 border-t sticky bottom-0 bg-white dark:bg-slate-950 pb-2 z-10">
+        <Button type="submit" className="w-full h-12 text-lg font-bold shadow-lg shadow-blue-500/20" disabled={loading}>
+          {loading ? (submitLabel === 'Save Changes' ? 'Saving...' : 'Creating...') : (submitLabel || 'Create Task')}
+        </Button>
       </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="dueDate">Due Date</Label>
-          <Input id="dueDate" type="date" {...register('dueDate')} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="dueTime">Due Time</Label>
-          <Input id="dueTime" type="time" {...register('dueTime')} />
-        </div>
-      </div>
-
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? (submitLabel === 'Save Changes' ? 'Saving...' : 'Creating...') : (submitLabel || 'Create Task')}
-      </Button>
     </form>
   );
 }

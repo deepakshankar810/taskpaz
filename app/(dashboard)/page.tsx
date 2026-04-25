@@ -11,6 +11,7 @@ import { Plus, CheckCircle2, Clock, TrendingUp, Folder, Wallet } from 'lucide-re
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import type { User } from '@/lib/types';
+import { StreakCard } from '@/components/dashboard/StreakCard';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -87,6 +88,13 @@ export default function DashboardPage() {
           Here is your daily overview.
         </p>
       </div>
+
+      {/* Gamification Row */}
+      {!loadingTasks && tasks.length > 0 && (
+        <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+          <StreakCard tasks={tasks} />
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">

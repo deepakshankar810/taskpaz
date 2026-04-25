@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Calendar, Plus, Folder, Wallet, Focus } from 'lucide-react';
+import { LayoutDashboard, Calendar, Plus, Folder, Wallet, Focus, BookOpen } from 'lucide-react';
 import { QuickActionPopup } from './QuickActionPopup';
 
 const mobileItems = [
   { name: 'Home', href: '/', icon: LayoutDashboard },
   { name: 'Focus', href: '/focus', icon: Focus },
+  { name: 'Journal', href: '/journal', icon: BookOpen },
   { name: 'Calendar', href: '/tasks?view=calendar', icon: Calendar },
 ];
 
@@ -25,8 +26,8 @@ export function MobileNav() {
     <>
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white pb-safe dark:bg-slate-950 md:hidden">
         <div className="flex h-16 items-center justify-around px-2">
-          {/* Home Item */}
-          {mobileItems.slice(0, 1).map((item) => {
+          {/* First half of items */}
+          {mobileItems.slice(0, 2).map((item) => {
             const isActive = pathname === (item.href.split('?')[0]);
 
             return (
@@ -60,8 +61,8 @@ export function MobileNav() {
             </button>
           </div>
 
-          {/* Calendar Item */}
-          {mobileItems.slice(1, 2).map((item) => {
+          {/* Second half of items */}
+          {mobileItems.slice(2).map((item) => {
             const isActive = pathname === item.href.split('?')[0];
 
             return (
