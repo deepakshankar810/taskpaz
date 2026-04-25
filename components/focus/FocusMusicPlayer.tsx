@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Music, Play, Pause, SkipForward, SkipBack, Volume2, Headphones, Search, Loader2 } from 'lucide-react';
+import { Music, Play, Pause, SkipForward, SkipBack, Volume2, Headphones, Search, Loader2, Repeat } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useMusic } from '@/components/providers/MusicProvider';
 
 export function FocusMusicPlayer() {
-  const { currentStation, isPlaying, isSearching, togglePlay, nextStation, prevStation, searchSong } = useMusic();
+  const { currentStation, isPlaying, isRepeating, isSearching, togglePlay, toggleRepeat, nextStation, prevStation, searchSong } = useMusic();
   const [searchQuery, setSearchQuery] = useState('');
   
   const handleSearch = async (e: React.FormEvent) => {
