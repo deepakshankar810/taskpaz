@@ -22,8 +22,8 @@ const mapTaskRow = (data: any): Task => ({
   timeSpent: data.time_spent,
   tags: data.tags || [],
   estimatedMinutes: data.estimated_minutes ?? undefined,
-  dependencies: data.dependencies || [],
-  sharedWith: data.shared_with || [],
+  dependencies: [],
+  sharedWith: [],
 });
 
 export const createTask = async (userId: string, input: CreateTaskInput, id?: string): Promise<Task> => {
@@ -46,8 +46,8 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
       time_spent: 0,
       tags: input.tags || [],
       estimated_minutes: input.estimatedMinutes || null,
-      dependencies: input.dependencies || [],
-      shared_with: input.sharedWith || [],
+      dependencies: [],
+      shared_with: [],
     };
 
     const { data, error } = await supabase
@@ -132,8 +132,7 @@ export const updateTask = async (taskId: string, updates: UpdateTaskInput): Prom
     if (updates.timeSpent !== undefined) updateData.time_spent = updates.timeSpent;
     if (updates.tags !== undefined) updateData.tags = updates.tags;
     if (updates.estimatedMinutes !== undefined) updateData.estimated_minutes = updates.estimatedMinutes;
-    if (updates.dependencies !== undefined) updateData.dependencies = updates.dependencies;
-    if (updates.sharedWith !== undefined) updateData.shared_with = updates.sharedWith;
+    // Removed sharing updates
 
     const { error } = await supabase
       .from(TASKS_TABLE)
