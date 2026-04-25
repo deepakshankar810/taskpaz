@@ -101,7 +101,7 @@ export function useFinance(userId: string | undefined | null) {
                 } else if (payload.eventType === 'UPDATE') {
                     setTransactions(prev => prev.map(t => t.id === payload.new.id ? docToTransaction(payload.new) : t));
                 } else if (payload.eventType === 'DELETE') {
-                    setTransactions(prev => prev.filter(t => t.id === payload.old.id));
+                    setTransactions(prev => prev.filter(t => t.id !== payload.old.id));
                 }
             })
             .subscribe();
@@ -114,7 +114,7 @@ export function useFinance(userId: string | undefined | null) {
                 } else if (payload.eventType === 'UPDATE') {
                     setSubscriptions(prev => prev.map(s => s.id === payload.new.id ? docToSubscription(payload.new) : s));
                 } else if (payload.eventType === 'DELETE') {
-                    setSubscriptions(prev => prev.filter(s => s.id === payload.old.id));
+                    setSubscriptions(prev => prev.filter(s => s.id !== payload.old.id));
                 }
             })
             .subscribe();
@@ -127,7 +127,7 @@ export function useFinance(userId: string | undefined | null) {
                 } else if (payload.eventType === 'UPDATE') {
                     setSavingsGoals(prev => prev.map(g => g.id === payload.new.id ? docToSavingsGoal(payload.new) : g));
                 } else if (payload.eventType === 'DELETE') {
-                    setSavingsGoals(prev => prev.filter(g => g.id === payload.old.id));
+                    setSavingsGoals(prev => prev.filter(g => g.id !== payload.old.id));
                 }
             })
             .subscribe();

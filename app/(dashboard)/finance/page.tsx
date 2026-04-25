@@ -131,24 +131,32 @@ export default function FinancePage() {
     return { monthlyIncome: income, monthlyExpenses: expenses, filteredByPeriod: filtered };
   }, [transactions, currentPeriod, searchQuery, filterCategory]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this transaction?')) return;
-
+  const handleDelete = (id: string) => {
     // Save current state for potential rollback
+    const transactionToDelete = transactions.find(t => t.id === id);
+    if (!transactionToDelete) return;
+
     const originalTransactions = [...transactions];
 
     // Optimistic delete
     setTransactions(prev => prev.filter(t => t.id !== id));
 
-    try {
-      await deleteTransaction(id);
-      toast.success('Transaction deleted');
-    } catch (error) {
+    toast.success('Transaction deleted', {
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          setTransactions(originalTransactions);
+        }
+      },
+      duration: 5000,
+    });
+
+    // Background delete - don't await here to keep event handler fast
+    deleteTransaction(id).catch(error => {
       console.error('Error deleting transaction:', error);
-      toast.error('Failed to delete');
-      // Rollback
+      toast.error('Failed to delete transaction from server');
       setTransactions(originalTransactions);
-    }
+    });
   };
 
   const formatCurrency = (val: number) => {

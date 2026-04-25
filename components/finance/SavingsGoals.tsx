@@ -105,18 +105,29 @@ export function SavingsGoals({ goals, userId, currency }: { goals: SavingsGoal[]
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Delete this goal?')) return;
+    const handleDelete = (id: string) => {
+        const goalToDelete = goals.find(g => g.id === id);
+        if (!goalToDelete) return;
+
         const originalGoals = [...goals];
         setSavingsGoals(prev => prev.filter(g => g.id !== id));
 
-        try {
-            await deleteSavingsGoal(id);
-            toast.success('Goal deleted');
-        } catch (error) {
-            toast.error('Failed to delete');
+        toast.success('Goal deleted', {
+            action: {
+                label: 'Undo',
+                onClick: () => {
+                    setSavingsGoals(originalGoals);
+                }
+            },
+            duration: 5000,
+        });
+
+        // Background delete
+        deleteSavingsGoal(id).catch(error => {
+            console.error('Error deleting goal:', error);
+            toast.error('Failed to delete goal');
             setSavingsGoals(originalGoals);
-        }
+        });
     };
 
     return (

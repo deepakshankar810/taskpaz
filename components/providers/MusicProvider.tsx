@@ -45,6 +45,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   
   const playerRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isRepeatingRef = useRef(isRepeating);
+
+  // Sync ref with state
+  useEffect(() => {
+    isRepeatingRef.current = isRepeating;
+  }, [isRepeating]);
 
   const togglePlay = () => {
     if (playerRef.current) {
@@ -149,7 +155,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         onStateChange: (event: any) => {
           // YT.PlayerState.ENDED = 0
           if (event.data === 0) {
-            if (isRepeating) {
+            if (isRepeatingRef.current) {
+              event.target.seekTo(0);
               event.target.playVideo();
             } else {
               // Fallback to Lofi

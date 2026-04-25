@@ -62,18 +62,27 @@ export default function ProjectsPage() {
 
   const handleDeleteProject = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this project?')) return;
+    const projectToDelete = projects.find(p => p.id === id);
+    if (!projectToDelete) return;
 
     // 1. Instant UI update
     removeOptimisticProject(id);
-    toast.success('Project deleted');
+    
+    toast.success('Project deleted', {
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          addOptimisticProject(projectToDelete);
+        }
+      },
+      duration: 5000,
+    });
 
     // 2. Background Sync
     deleteProject(id).catch((err) => {
       console.error('Project deletion background error:', err);
       toast.error('Failed to delete project from server');
-      // Note: Ideally we would rollback here, but we'd need the original project data.
-      // Since it's a deletion, usually a refresh or onSnapshot will restore it if it fails.
+      addOptimisticProject(projectToDelete);
     });
   };
 

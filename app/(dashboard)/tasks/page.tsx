@@ -158,21 +158,31 @@ function TasksContent() {
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+  const handleDeleteTask = (taskId: string) => {
+    const taskToDelete = tasks.find(t => t.id === taskId);
+    if (!taskToDelete) return;
 
     // Instant UI feedback
     removeOptimisticTask(taskId);
-    toast.success('Task deleted');
 
-    try {
-      const { deleteTask } = await import('@/lib/db/tasks');
-      await deleteTask(taskId);
-    } catch (error) {
-      console.error('Delete task error:', error);
-      toast.error('Failed to delete task.');
-      // Ideally we should restore the task here, but onSnapshot might refresh anyway
-    }
+    toast.success('Task deleted', {
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          addOptimisticTask(taskToDelete);
+        }
+      },
+      duration: 5000,
+    });
+
+    // Background Server Sync
+    import('@/lib/db/tasks').then(({ deleteTask }) => {
+      deleteTask(taskId).catch((error) => {
+        console.error('Delete task error:', error);
+        toast.error('Failed to delete task.');
+        addOptimisticTask(taskToDelete);
+      });
+    });
   };
 
   // Calendar specific filter
