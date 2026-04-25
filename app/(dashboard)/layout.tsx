@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -72,7 +72,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        <Suspense fallback={<div className="h-16 border-b bg-white dark:bg-slate-950" />}>
+          <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        </Suspense>
         <main className="flex-1 overflow-auto relative pb-24 md:pb-0">
           <ProjectsProvider>
             <TasksProvider>
