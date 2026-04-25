@@ -9,9 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
-import { Plus, X, Timer, Tag as TagIcon, Link as LinkIcon, Sparkles } from 'lucide-react';
+import { Plus, X, Timer, Tag as TagIcon, Link as LinkIcon } from 'lucide-react';
 import { TagInput } from './TagInput';
-import { AIBreakdownButton } from './AIBreakdownButton';
 import { DependencySelector } from './DependencySelector';
 
 // Internal form state can have strings for dates (HTML input requirement)
@@ -51,24 +50,7 @@ export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel, task
   const tags = watch('tags') || [];
   const dependencies = watch('dependencies') || [];
 
-  const handleAIResult = (result: any) => {
-    // Add new subtasks (merge with existing if any, or replace)
-    const newSubtasks = result.subtasks.map((st: any) => ({
-      id: crypto.randomUUID(),
-      title: st.title,
-      completed: false
-    }));
-    
-    setValue('subtasks', [...subtasks, ...newSubtasks]);
-    setValue('priority', result.suggestedPriority);
-    setValue('estimatedMinutes', result.estimatedMinutes);
-    
-    // Optionally prepend tip to description
-    if (result.tip) {
-      const currentDesc = descriptionValue || '';
-      setValue('description', `<p><strong>Pro Tip:</strong> ${result.tip}</p>${currentDesc}`);
-    }
-  };
+
 
   const addSubtask = () => {
     setValue('subtasks', [...subtasks, { id: crypto.randomUUID(), title: '', completed: false }]);
@@ -126,12 +108,6 @@ export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel, task
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="title" className="text-sm font-semibold">Title</Label>
-            <AIBreakdownButton 
-              title={titleValue} 
-              description={descriptionValue} 
-              onResult={handleAIResult}
-              disabled={loading}
-            />
           </div>
           <Input 
             id="title" 
