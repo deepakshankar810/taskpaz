@@ -217,9 +217,9 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         </form>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4">
+      <div className="flex items-center gap-1 sm:gap-4">
         {mounted && (
-          <div className="hidden sm:flex items-center gap-4">
+          <div className="flex items-center gap-1 sm:gap-4">
             <PomodoroTimer />
             <NavbarMusicPlayer />
           </div>

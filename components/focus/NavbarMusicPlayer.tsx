@@ -45,11 +45,11 @@ export function NavbarMusicPlayer() {
 
       {/* Info & Controls */}
       <div className="flex items-center gap-2">
-        <div className="flex flex-col min-w-[80px] max-w-[120px]">
-          <span className="text-[10px] font-bold truncate leading-tight text-slate-700 dark:text-slate-200">
+        <div className="flex flex-col min-w-[40px] sm:min-w-[80px] max-w-[100px] sm:max-w-[120px]">
+          <span className="text-[9px] sm:text-[10px] font-bold truncate leading-tight text-slate-700 dark:text-slate-200">
             {currentStation.name}
           </span>
-          <span className="text-[8px] truncate leading-tight text-slate-400">
+          <span className="hidden xs:block text-[8px] truncate leading-tight text-slate-400">
             {currentStation.author}
           </span>
         </div>
