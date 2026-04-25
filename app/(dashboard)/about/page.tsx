@@ -60,7 +60,75 @@ export default function AboutPage() {
           </CardContent>
         </Card>
 
-        {/* Creator Section */}
+        {/* Functions and Uses Section */}
+        <section className="space-y-8">
+          <div className="text-center space-y-2">
+            <h2 className="text-3xl font-bold tracking-tight">Powerful Functions. Simple Utility.</h2>
+            <p className="text-slate-500 max-w-2xl mx-auto">Everything you need to manage your day, your money, and your mind in one place.</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="group p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <CheckSquare className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-bold mb-3">Intelligent Task Management</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Organize your life with our dynamic Kanban boards. Set priorities, track due dates, and watch your productivity soar as you move cards from 'To Do' to 'Done'.
+              </p>
+            </div>
+
+            <div className="group p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="h-12 w-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Focus className="h-6 w-6 text-indigo-600" />
+              </div>
+              <h3 className="text-lg font-bold mb-3">The Focus Sanctuary</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Enter your flow state with an integrated Pomodoro timer and a persistent YouTube Radio. Switch between Lofi, Jazz, or search your own tracks without interruption.
+              </p>
+            </div>
+
+            <div className="group p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="h-12 w-12 rounded-2xl bg-green-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Wallet className="h-6 w-6 text-green-600" />
+              </div>
+              <h3 className="text-lg font-bold mb-3">Financial Intelligence</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Take control of your economy. Track every expense, manage recurring subscriptions, and set savings goals with real-time progress visualizations.
+              </p>
+            </div>
+
+            <div className="group p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="h-12 w-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <BookOpen className="h-6 w-6 text-amber-600" />
+              </div>
+              <h3 className="text-lg font-bold mb-3">Digital Mindfulness</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Clear your mind with our minimal Journaling module. Record your daily thoughts, reflections, and ideas in a secure, private digital diary.
+              </p>
+            </div>
+
+            <div className="group p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="h-12 w-12 rounded-2xl bg-rose-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <BarChart className="h-6 w-6 text-rose-600" />
+              </div>
+              <h3 className="text-lg font-bold mb-3">Advanced Analytics</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Gain insights into your habits. View detailed charts of your task completion rates and spending patterns to make better decisions for your future.
+              </p>
+            </div>
+
+            <div className="group p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="h-12 w-12 rounded-2xl bg-sky-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Zap className="h-6 w-6 text-sky-600" />
+              </div>
+              <h3 className="text-lg font-bold mb-3">Real-time Cloud Sync</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Built on top of industry-standard security, your data is synced instantly across all devices. Work on your desktop and check progress on your phone effortlessly.
+              </p>
+            </div>
+          </div>
+        </section>
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <h2 className="text-3xl font-bold tracking-tight px-2">The Creator</h2>
