@@ -17,7 +17,7 @@ export default function AboutPage() {
         
         <div className="relative text-center space-y-4 max-w-3xl">
           <h1 className="text-5xl md:text-6xl font-black tracking-tighter italic">Taskpaz.</h1>
-          <p className="text-xl md:text-2xl text-blue-100 font-medium">Elevating productivity through science and design.</p>
+          <p className="text-xl md:text-2xl text-blue-100 font-medium">Elevating productivity through intuition and design.</p>
           <div className="flex justify-center gap-2 pt-4">
             <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-semibold backdrop-blur-md border border-white/20">v1.2.0 Premium</span>
             <span className="px-3 py-1 bg-green-500/20 rounded-full text-xs font-semibold backdrop-blur-md border border-green-500/20">System Live</span>
@@ -31,11 +31,8 @@ export default function AboutPage() {
           <CardContent className="p-8 md:p-12 grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Our Mission</h2>
-              <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                Taskpaz is an advanced productivity ecosystem designed to bridge the gap between structured planning and psychological flow.
-              </p>
               <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
-                Our mission is to empower professionals with a scientifically-grounded workspace that harmonizes task management, financial tracking, and distraction-free focus—all within a single, high-performance interface.
+                Our mission is to empower everyone with a beautifully intuitive workspace that harmonizes task management, financial tracking, and distraction-free focus—all within a single, high-performance interface.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
