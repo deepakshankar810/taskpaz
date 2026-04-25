@@ -6,7 +6,12 @@ import { useTasksContext } from './TasksProvider';
 import { useFinanceContext } from './FinanceProvider';
 import { isToday, differenceInDays } from 'date-fns';
 
-const NotificationContext = createContext({});
+type NotificationContextType = {
+    requestPermission: () => Promise<void>;
+    sendNotification: (title: string, options?: NotificationOptions) => void;
+};
+
+const NotificationContext = createContext<NotificationContextType>({} as NotificationContextType);
 
 export const useNotification = () => useContext(NotificationContext);
 
@@ -92,7 +97,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, [subscriptions, user?.id, sendNotification]);
 
     return (
-        <NotificationContext.Provider value={{ requestPermission }}>
+        <NotificationContext.Provider value={{ requestPermission, sendNotification }}>
             {children}
         </NotificationContext.Provider>
     );

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useNotification } from '@/components/providers/NotificationProvider';
 import { getUserProfile } from '@/lib/auth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function SettingsPage() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { requestPermission, sendNotification } = useNotification();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
@@ -61,12 +63,33 @@ export default function SettingsPage() {
     toast.success('Profile updated successfully');
   };
 
-  const handleToggleNotif = (type: 'browser', val: boolean) => {
+  const handleToggleNotif = async (type: 'browser', val: boolean) => {
     if (type === 'browser') {
-      setBrowserNotifs(val);
-      localStorage.setItem(`notif_browser_${user?.id}`, String(val));
+      if (val) {
+        if ('Notification' in window) {
+          if (Notification.permission !== 'granted') {
+            await requestPermission();
+          }
+          if (Notification.permission === 'granted') {
+            setBrowserNotifs(true);
+            localStorage.setItem(`notif_browser_${user?.id}`, 'true');
+            toast.success('Browser notifications enabled');
+            sendNotification('Notifications Enabled', { body: 'You will now receive alerts for urgent tasks.' });
+          } else {
+            toast.error('Notification permission denied');
+            setBrowserNotifs(false);
+            localStorage.setItem(`notif_browser_${user?.id}`, 'false');
+          }
+        } else {
+          toast.error('Browser does not support notifications');
+          setBrowserNotifs(false);
+        }
+      } else {
+        setBrowserNotifs(false);
+        localStorage.setItem(`notif_browser_${user?.id}`, 'false');
+        toast.success('Browser notifications disabled');
+      }
     }
-    toast.success('Preferences updated');
   };
 
   if (!user) return null;
