@@ -9,7 +9,6 @@ import { CategoryBadge } from './CategoryBadge';
 import { Badge } from '@/components/ui/badge';
 import { useTasksContext } from '@/components/providers/TasksProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { CollaboratorModal } from './CollaboratorModal';
 import { useState } from 'react';
 
 interface TaskCardProps {
@@ -24,13 +23,6 @@ export function TaskCard({ task, onComplete, onDelete, onEdit }: TaskCardProps) 
   const { tasks } = useTasksContext();
   const [isShareOpen, setIsShareOpen] = useState(false);
 
-  // Check if shared from someone else
-  const isShared = user && task.userId !== user.id;
-
-  // Check if blocked by other tasks
-  const blockedBy = tasks.filter(t => task.dependencies?.includes(t.id) && t.status !== 'completed');
-  const isBlocked = blockedBy.length > 0;
-
   return (
     <>
       <Card className={`group hover:shadow-xl transition-all duration-300 border-l-4 ${
@@ -44,33 +36,13 @@ export function TaskCard({ task, onComplete, onDelete, onEdit }: TaskCardProps) 
               <div className="flex items-center gap-2 flex-wrap">
                 <PriorityBadge priority={task.priority} />
                 <CategoryBadge category={task.category} />
-                {isShared && (
-                  <Badge variant="secondary" className="h-5 px-1.5 gap-1 text-[10px] bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-900/20 dark:text-purple-400">
-                    <Users className="h-3 w-3" />
-                    Shared
-                  </Badge>
-                )}
-                {isBlocked && (
-                  <Badge variant="destructive" className="h-5 px-1.5 gap-1 text-[10px] animate-pulse">
-                    <AlertTriangle className="h-3 w-3" />
-                    Blocked
-                  </Badge>
-                )}
               </div>
               <h3 className={`text-base font-bold leading-tight truncate ${task.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-900 dark:text-slate-100'}`}>
                 {task.title}
               </h3>
             </div>
             <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" 
-                onClick={() => setIsShareOpen(true)}
-                title="Share / Collaborate"
-              >
-                <Users className="w-4 h-4" />
-              </Button>
+              {/* Collaboration button removed */}
               <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" onClick={onEdit}>
                 <Pencil className="w-4 h-4" />
               </Button>
@@ -127,16 +99,7 @@ export function TaskCard({ task, onComplete, onDelete, onEdit }: TaskCardProps) 
             </div>
           )}
 
-          {task.dependencies && task.dependencies.length > 0 && (
-            <div className={`flex items-center text-[11px] font-medium px-2 py-1 rounded border ${
-              isBlocked 
-                ? 'text-red-600 bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-900/30' 
-                : 'text-slate-500 bg-slate-50 border-slate-100 dark:bg-slate-900 dark:border-slate-800'
-            }`} title="Dependencies">
-              <LinkIcon className="w-3 h-3 mr-1.5" />
-              {task.dependencies.length} {isBlocked ? 'Blocked' : 'Linked'}
-            </div>
-          )}
+          {/* Dependencies view removed */}
         </div>
       </CardContent>
       <CardFooter className="px-5 py-3 bg-slate-50/50 dark:bg-slate-900/30 flex justify-end">
@@ -145,20 +108,14 @@ export function TaskCard({ task, onComplete, onDelete, onEdit }: TaskCardProps) 
             size="sm" 
             className="h-8 px-4 rounded-full shadow-sm hover:shadow-md transition-shadow" 
             onClick={onComplete}
-            disabled={isBlocked}
           >
             <CheckCircle className="w-4 h-4 mr-2" /> 
-            {isBlocked ? 'Blocked' : 'Complete'}
+            Complete
           </Button>
         )}
       </CardFooter>
     </Card>
 
-    <CollaboratorModal 
-      taskId={task.id} 
-      isOpen={isShareOpen} 
-      onClose={() => setIsShareOpen(false)} 
-    />
     </>
   );
 }
