@@ -16,6 +16,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { formatDistanceToNow, isPast, isToday, isTomorrow, differenceInDays } from 'date-fns';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PomodoroTimer } from '@/components/task/PomodoroTimer';
+import { NavbarMusicPlayer } from '@/components/focus/NavbarMusicPlayer';
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -216,8 +217,13 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         </form>
       </div>
 
-      <div className="flex items-center gap-4">
-        {mounted && <PomodoroTimer />}
+      <div className="flex items-center gap-2 md:gap-4">
+        {mounted && (
+          <div className="hidden sm:flex items-center gap-4">
+            <PomodoroTimer />
+            <NavbarMusicPlayer />
+          </div>
+        )}
         {mounted && (
           <Popover>
             <PopoverTrigger asChild>

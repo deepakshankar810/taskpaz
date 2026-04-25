@@ -5,70 +5,16 @@ import { Music, Play, Pause, SkipForward, SkipBack, Volume2, Headphones, Search,
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
-const INITIAL_STATIONS = [
-  {
-    id: 'jfKfPfyJRdk', // Lofi Girl
-    name: 'Lofi Hip Hop',
-    author: 'Lofi Girl',
-    thumbnail: 'https://img.youtube.com/vi/jfKfPfyJRdk/0.jpg',
-  },
-  {
-    id: '5yx6BWVnrKY', // Chillhop
-    name: 'Chillhop Radio',
-    author: 'Chillhop Music',
-    thumbnail: 'https://img.youtube.com/vi/5yx6BWVnrKY/0.jpg',
-  },
-];
+import { useMusic } from '@/components/providers/MusicProvider';
 
 export function FocusMusicPlayer() {
-  const [currentStation, setCurrentStation] = useState(INITIAL_STATIONS[0]);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const { currentStation, isPlaying, isSearching, togglePlay, nextStation, prevStation, searchSong } = useMusic();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
   
-  const togglePlay = () => setIsPlaying(!isPlaying);
-
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
-
-    setIsSearching(true);
-    try {
-      const res = await fetch(`/api/music/search?q=${encodeURIComponent(searchQuery)}`);
-      const data = await res.json();
-      
-      if (data.id) {
-        setCurrentStation(data);
-        setIsPlaying(true);
-        setSearchQuery('');
-      }
-    } catch (error) {
-      console.error('Search failed:', error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const nextStation = () => {
-    // If we are on an initial station, go to next. If searched, go back to lofi
-    const index = INITIAL_STATIONS.findIndex(s => s.id === currentStation.id);
-    if (index !== -1) {
-      setCurrentStation(INITIAL_STATIONS[(index + 1) % INITIAL_STATIONS.length]);
-    } else {
-      setCurrentStation(INITIAL_STATIONS[0]);
-    }
-    setIsPlaying(true);
-  };
-
-  const prevStation = () => {
-    const index = INITIAL_STATIONS.findIndex(s => s.id === currentStation.id);
-    if (index !== -1) {
-      setCurrentStation(INITIAL_STATIONS[(index - 1 + INITIAL_STATIONS.length) % INITIAL_STATIONS.length]);
-    } else {
-      setCurrentStation(INITIAL_STATIONS[0]);
-    }
-    setIsPlaying(true);
+    await searchSong(searchQuery);
+    setSearchQuery('');
   };
 
   return (
@@ -121,19 +67,6 @@ export function FocusMusicPlayer() {
           </div>
         </div>
 
-        {/* Hidden YouTube Iframe */}
-        {isPlaying && (
-          <div className="hidden">
-            <iframe
-              key={currentStation.id}
-              width="1"
-              height="1"
-              src={`https://www.youtube.com/embed/${currentStation.id}?autoplay=1&mute=0&controls=0&showinfo=0`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            ></iframe>
-          </div>
-        )}
-
         {/* Controls */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-center gap-4">
@@ -166,7 +99,7 @@ export function FocusMusicPlayer() {
 
           <div className="flex items-center gap-2 text-[9px] text-indigo-400 justify-center">
             <Volume2 className="h-3 w-3" />
-            <span>YouTube Audio Stream</span>
+            <span>Global Audio Stream</span>
           </div>
         </div>
       </CardContent>
