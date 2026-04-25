@@ -135,7 +135,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       width: '1',
       videoId: videoId,
       playerVars: {
-        autoplay: 1,
+        autoplay: 0,
         controls: 0,
         showinfo: 0,
         rel: 0,

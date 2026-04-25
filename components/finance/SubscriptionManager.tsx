@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Plus, Trash2, Calendar } from 'lucide-react';
+import { CreditCard, Plus, Trash2, Calendar, Pencil } from 'lucide-react';
 import { Subscription } from '@/lib/types';
-import { format } from 'date-fns';
-import { addSubscription, deleteSubscription } from '@/lib/db/finance';
+import { format, startOfDay, isBefore, addMonths, addYears } from 'date-fns';
+import { addSubscription, deleteSubscription, updateSubscription } from '@/lib/db/finance';
 import { getDaysRemaining } from '@/lib/utils';
 import {
     Dialog,
@@ -26,6 +26,8 @@ import { useFinanceContext } from '@/components/providers/FinanceProvider';
 export function SubscriptionManager({ subscriptions, userId, currency }: { subscriptions: Subscription[], userId: string, currency: string }) {
     const { setSubscriptions } = useFinanceContext();
     const [isAddOpen, setIsAddOpen] = useState(false);
+    const [editId, setEditId] = useState<string | null>(null);
+
     const [name, setName] = useState('');
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState('');
@@ -33,12 +35,30 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
     const [billingInterval, setBillingInterval] = useState('1');
     const [nextBillingDate, setNextBillingDate] = useState('');
 
+    const resetForm = () => {
+        setName('');
+        setAmount('');
+        setCategory('');
+        setNextBillingDate('');
+        setBillingInterval('1');
+        setEditId(null);
+    };
+
+    const handleOpenEdit = (sub: Subscription) => {
+        setName(sub.name);
+        setAmount(sub.amount.toString());
+        setCategory(sub.category || '');
+        setBillingCycle(sub.billingCycle);
+        setBillingInterval(sub.billingInterval.toString());
+        setNextBillingDate(format(sub.nextBillingDate, 'yyyy-MM-dd'));
+        setEditId(sub.id);
+        setIsAddOpen(true);
+    };
+
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!name || !amount || !nextBillingDate) return;
 
-        // Optimistically close and clear
-        setIsAddOpen(false);
         const currentName = name;
         const currentAmount = amount;
         const currentCategory = category;
@@ -46,31 +66,42 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
         const currentCycle = billingCycle;
         const currentInterval = parseInt(billingInterval) || 1;
 
-        setName('');
-        setAmount('');
-        setCategory('');
-        setNextBillingDate('');
-        setBillingInterval('1');
+        // Optimistically close and clear
+        setIsAddOpen(false);
+        resetForm();
 
-        const tempId = crypto.randomUUID();
-        const optimisticSub = {
-            id: tempId,
-            userId,
-            name: currentName,
-            amount: parseFloat(currentAmount),
-            category: currentCategory || 'General',
-            billingCycle: currentCycle,
-            billingInterval: currentInterval,
-            nextBillingDate: new Date(currentDate),
-            active: true,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        } as any;
+        if (editId) {
+            const originalSubs = [...subscriptions];
+            setSubscriptions(prev => prev.map(s => s.id === editId ? {
+                ...s,
+                name: currentName,
+                amount: parseFloat(currentAmount),
+                category: currentCategory,
+                billingCycle: currentCycle,
+                billingInterval: currentInterval,
+                nextBillingDate: new Date(currentDate),
+                updatedAt: new Date(),
+            } : s));
 
-        setSubscriptions(prev => [optimisticSub, ...prev]);
-
-        try {
-            await addSubscription(userId, {
+            try {
+                await updateSubscription(editId, {
+                    name: currentName,
+                    amount: parseFloat(currentAmount),
+                    category: currentCategory,
+                    billingCycle: currentCycle,
+                    billingInterval: currentInterval,
+                    nextBillingDate: new Date(currentDate),
+                });
+                toast.success('Subscription updated');
+            } catch (error) {
+                toast.error('Failed to update');
+                setSubscriptions(originalSubs);
+            }
+        } else {
+            const tempId = crypto.randomUUID();
+            const optimisticSub = {
+                id: tempId,
+                userId,
                 name: currentName,
                 amount: parseFloat(currentAmount),
                 category: currentCategory || 'General',
@@ -78,13 +109,28 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                 billingInterval: currentInterval,
                 nextBillingDate: new Date(currentDate),
                 active: true,
-            } as any);
-            toast.success('Subscription added');
-        } catch (error: any) {
-            console.error('Subscription error:', error);
-            const msg = error.message || 'Check console';
-            toast.error(`Failed to add subscription: ${msg}`);
-            setSubscriptions(prev => prev.filter(s => s.id !== tempId));
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            } as any;
+
+            setSubscriptions(prev => [optimisticSub, ...prev]);
+
+            try {
+                await addSubscription(userId, {
+                    name: currentName,
+                    amount: parseFloat(currentAmount),
+                    category: currentCategory || 'General',
+                    billingCycle: currentCycle,
+                    billingInterval: currentInterval,
+                    nextBillingDate: new Date(currentDate),
+                    active: true,
+                } as any);
+                toast.success('Subscription added');
+            } catch (error: any) {
+                console.error('Subscription error:', error);
+                toast.error(`Failed to add subscription`);
+                setSubscriptions(prev => prev.filter(s => s.id !== tempId));
+            }
         }
     };
 
@@ -117,7 +163,10 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                     <CreditCard className="h-5 w-5 text-purple-500" />
                     Subscriptions
                 </CardTitle>
-                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                <Dialog open={isAddOpen} onOpenChange={(open) => {
+                    setIsAddOpen(open);
+                    if (!open) resetForm();
+                }}>
                     <DialogTrigger asChild>
                         <Button size="sm" variant="outline" className="h-8 gap-1">
                             <Plus className="h-4 w-4" />
@@ -126,7 +175,7 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Add Subscription</DialogTitle>
+                            <DialogTitle>{editId ? 'Edit Subscription' : 'Add Subscription'}</DialogTitle>
                         </DialogHeader>
                         <form onSubmit={handleAdd} className="space-y-4 pt-4">
                             <div className="grid gap-2">
@@ -165,7 +214,9 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                                 <Label>Next Billing Date</Label>
                                 <Input type="date" value={nextBillingDate} onChange={e => setNextBillingDate(e.target.value)} required />
                             </div>
-                            <Button type="submit" className="w-full">Save Subscription</Button>
+                            <Button type="submit" className="w-full">
+                                {editId ? 'Update Subscription' : 'Save Subscription'}
+                            </Button>
                         </form>
                     </DialogContent>
                 </Dialog>
@@ -182,7 +233,19 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                         </div>
                     ) : (
                         subscriptions.map(sub => {
-                            const daysLeft = getDaysRemaining(sub.nextBillingDate);
+                            let displayDate = new Date(sub.nextBillingDate);
+                            const today = startOfDay(new Date());
+                            
+                            // Calculate projected next date for display if past
+                            while (isBefore(displayDate, today)) {
+                                if (sub.billingCycle === 'monthly') {
+                                    displayDate = addMonths(displayDate, sub.billingInterval || 1);
+                                } else {
+                                    displayDate = addYears(displayDate, sub.billingInterval || 1);
+                                }
+                            }
+
+                            const daysLeft = getDaysRemaining(displayDate);
                             const isNear = daysLeft <= 3 && daysLeft >= 0;
 
                             return (
@@ -198,14 +261,19 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                                                     {currency}{sub.amount} / {sub.billingInterval > 1 ? `${sub.billingInterval} ` : ''}{sub.billingCycle.replace('ly', '')}{sub.billingInterval > 1 ? 's' : ''}
                                                 </span>
                                                 <Badge variant={isNear ? "destructive" : "outline"} className="h-4 text-[10px] px-1 uppercase">
-                                                    {daysLeft === 0 ? 'Today' : daysLeft < 0 ? 'Overdue' : `${daysLeft}d left`}
+                                                    {daysLeft === 0 ? 'Today' : `${daysLeft}d left`}
                                                 </Badge>
                                             </div>
                                         </div>
                                     </div>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => handleDelete(sub.id)}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-500" onClick={() => handleOpenEdit(sub)}>
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => handleDelete(sub.id)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
                             );
                         })
