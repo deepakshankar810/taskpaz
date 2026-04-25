@@ -16,18 +16,6 @@ const INITIAL_STATIONS: Station[] = [
     author: 'Lofi Girl',
     thumbnail: 'https://img.youtube.com/vi/jfKfPfyJRdk/0.jpg',
   },
-  {
-    id: '5yx6BWVnrKY',
-    name: 'Chillhop Radio',
-    author: 'Chillhop Music',
-    thumbnail: 'https://img.youtube.com/vi/5yx6BWVnrKY/0.jpg',
-  },
-  {
-    id: '4xDzrJKXOOY',
-    name: 'Synthwave Radio',
-    author: 'Lofi Girl',
-    thumbnail: 'https://img.youtube.com/vi/4xDzrJKXOOY/0.jpg',
-  },
 ];
 
 interface MusicContextType {
@@ -90,6 +78,42 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    // Load YouTube IFrame API
+    if (!(window as any).YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+
+    (window as any).onYouTubeIframeAPIReady = () => {
+      console.log('YT API Ready');
+    };
+  }, []);
+
+  const onPlayerStateChange = (event: any) => {
+    // YT.PlayerState.ENDED is 0
+    if (event.data === 0) {
+      if (!isRepeating) {
+        setCurrentStation(INITIAL_STATIONS[0]); // Back to Lofi
+        setIsPlaying(true);
+      }
+    }
+  };
+
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    if (isPlaying && (window as any).YT && (window as any).YT.Player) {
+      new (window as any).YT.Player('yt-player', {
+        events: {
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    }
+  }, [isPlaying, currentStation.id]);
+
   return (
     <MusicContext.Provider value={{ 
       currentStation, 
@@ -108,10 +132,11 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       {isPlaying && (
         <div className="hidden pointer-events-none opacity-0 invisible overflow-hidden w-0 h-0">
           <iframe
+            id="yt-player"
             key={currentStation.id + (isRepeating ? '-repeat' : '')}
             width="1"
             height="1"
-            src={`https://www.youtube.com/embed/${currentStation.id}?autoplay=1&mute=0&controls=0&showinfo=0${isRepeating ? `&loop=1&playlist=${currentStation.id}` : ''}`}
+            src={`https://www.youtube.com/embed/${currentStation.id}?autoplay=1&mute=0&controls=0&showinfo=0&enablejsapi=1${isRepeating ? `&loop=1&playlist=${currentStation.id}` : ''}`}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           ></iframe>
         </div>
