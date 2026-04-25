@@ -70,49 +70,58 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     useEffect(() => {
         if (!tasks) return;
 
-        // 1. Urgent Tasks
-        const urgentTasks = tasks.filter(t => t.priority === 'urgent' && t.status !== 'completed');
-        const lastUrgentId = localStorage.getItem(`last_urgent_${user?.id}`);
-        if (urgentTasks.length > 0 && urgentTasks[0].id !== lastUrgentId) {
-            sendNotification('High Priority Task', {
-                body: `You have an urgent task: ${urgentTasks[0].title}`,
-            });
-            localStorage.setItem(`last_urgent_${user?.id}`, urgentTasks[0].id);
-        }
+        // Offload to next tick to keep INP low
+        const timeout = setTimeout(() => {
+            // 1. Urgent Tasks
+            const urgentTasks = tasks.filter(t => t.priority === 'urgent' && t.status !== 'completed');
+            const lastUrgentId = localStorage.getItem(`last_urgent_${user?.id}`);
+            if (urgentTasks.length > 0 && urgentTasks[0].id !== lastUrgentId) {
+                sendNotification('High Priority Task', {
+                    body: `You have an urgent task: ${urgentTasks[0].title}`,
+                });
+                localStorage.setItem(`last_urgent_${user?.id}`, urgentTasks[0].id);
+            }
 
-        // 2. Due Date Near (due today or tomorrow)
-        const dueSoonTasks = tasks.filter(t => {
-            if (!t.dueDate || t.status === 'completed') return false;
-            const daysLeft = differenceInDays(new Date(t.dueDate), new Date());
-            return daysLeft >= 0 && daysLeft <= 1;
-        });
-
-        const lastDueSoonId = localStorage.getItem(`last_due_soon_${user?.id}`);
-        if (dueSoonTasks.length > 0 && dueSoonTasks[0].id !== lastDueSoonId) {
-            sendNotification('Task Deadline Approaching', {
-                body: `"${dueSoonTasks[0].title}" is due soon!`,
+            // 2. Due Date Near
+            const dueSoonTasks = tasks.filter(t => {
+                if (!t.dueDate || t.status === 'completed') return false;
+                const daysLeft = differenceInDays(new Date(t.dueDate), new Date());
+                return daysLeft >= 0 && daysLeft <= 1;
             });
-            localStorage.setItem(`last_due_soon_${user?.id}`, dueSoonTasks[0].id);
-        }
+
+            const lastDueSoonId = localStorage.getItem(`last_due_soon_${user?.id}`);
+            if (dueSoonTasks.length > 0 && dueSoonTasks[0].id !== lastDueSoonId) {
+                sendNotification('Task Deadline Approaching', {
+                    body: `"${dueSoonTasks[0].title}" is due soon!`,
+                });
+                localStorage.setItem(`last_due_soon_${user?.id}`, dueSoonTasks[0].id);
+            }
+        }, 100);
+
+        return () => clearTimeout(timeout);
     }, [tasks, user?.id, sendNotification]);
 
     // Monitor subscriptions
     useEffect(() => {
         if (!subscriptions) return;
 
-        const billingSoon = subscriptions.filter(s => {
-            if (!s.active) return false;
-            const daysLeft = differenceInDays(new Date(s.nextBillingDate), new Date());
-            return daysLeft >= 0 && daysLeft <= 2;
-        });
-
-        const lastSubNotifId = localStorage.getItem(`last_sub_notif_${user?.id}`);
-        if (billingSoon.length > 0 && billingSoon[0].id !== lastSubNotifId) {
-            sendNotification('Subscription Renewal', {
-                body: `${billingSoon[0].name} is due for billing in ${differenceInDays(new Date(billingSoon[0].nextBillingDate), new Date())} days.`,
+        const timeout = setTimeout(() => {
+            const billingSoon = subscriptions.filter(s => {
+                if (!s.active) return false;
+                const daysLeft = differenceInDays(new Date(s.nextBillingDate), new Date());
+                return daysLeft >= 0 && daysLeft <= 2;
             });
-            localStorage.setItem(`last_sub_notif_${user?.id}`, billingSoon[0].id);
-        }
+
+            const lastSubNotifId = localStorage.getItem(`last_sub_notif_${user?.id}`);
+            if (billingSoon.length > 0 && billingSoon[0].id !== lastSubNotifId) {
+                sendNotification('Subscription Renewal', {
+                    body: `${billingSoon[0].name} is due for billing in ${differenceInDays(new Date(billingSoon[0].nextBillingDate), new Date())} days.`,
+                });
+                localStorage.setItem(`last_sub_notif_${user?.id}`, billingSoon[0].id);
+            }
+        }, 200);
+
+        return () => clearTimeout(timeout);
     }, [subscriptions, user?.id, sendNotification]);
 
     return (

@@ -148,42 +148,50 @@ export function useTasks(userId: string | undefined | null) {
 
     // Derived state: Combined and sorted tasks
     const allTasks = useMemo(() => {
-        const combined = [...optimisticTasks, ...tasks];
-        // Filter out any duplicates if a task moved from optimistic to server
-        const unique = combined.filter((task, index, self) =>
-            index === self.findIndex((t) => t.id === task.id)
-        );
+        if (!tasks) return [];
 
-        // Apply optimistic updates
-        const updated = unique.map(task => {
-            if (optimisticUpdates[task.id]) {
-                return { ...task, ...optimisticUpdates[task.id] };
+        const combined = optimisticTasks.length > 0 ? [...optimisticTasks, ...tasks] : tasks;
+        
+        // Use a Map for fast unique filtering and optimistic merging
+        const taskMap = new Map<string, Task>();
+        
+        // Process base tasks first
+        for (const t of tasks) {
+            taskMap.set(t.id, t);
+        }
+        
+        // Overwrite with optimistic tasks
+        for (const t of optimisticTasks) {
+            taskMap.set(t.id, t);
+        }
+        
+        // Apply individual property updates
+        for (const [id, updates] of Object.entries(optimisticUpdates)) {
+            const existing = taskMap.get(id);
+            if (existing) {
+                taskMap.set(id, { ...existing, ...updates });
             }
-            return task;
-        });
+        }
 
-        return updated.sort((a, b) => {
-            // 1. Status priority: Active (pending/in-progress) first, then Completed
-            const isAActive = a.status !== 'completed';
-            const isBActive = b.status !== 'completed';
+        return Array.from(taskMap.values()).sort((a, b) => {
+            const isACompleted = a.status === 'completed';
+            const isBCompleted = b.status === 'completed';
 
-            if (isAActive && !isBActive) return -1;
-            if (!isAActive && isBActive) return 1;
+            if (isACompleted !== isBCompleted) {
+                return isACompleted ? 1 : -1;
+            }
 
-            if (isAActive && isBActive) {
-                // 2. Both active: sort by due date (closest first)
-                if (a.dueDate && b.dueDate) {
-                    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-                }
-                if (a.dueDate) return -1;
-                if (b.dueDate) return 1;
-                // Fallback to createdAt
+            if (!isACompleted) {
+                // Both active: sort by due date
+                const timeA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+                const timeB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+                if (timeA !== timeB) return timeA - timeB;
                 return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
             } else {
-                // 3. Both completed: sort by updatedAt or completedAt (most recent first)
-                const timeA = a.completedAt ? new Date(a.completedAt).getTime() : new Date(a.updatedAt).getTime();
-                const timeB = b.completedAt ? new Date(b.completedAt).getTime() : new Date(b.updatedAt).getTime();
-                return (timeB || 0) - (timeA || 0);
+                // Both completed: sort by completedAt/updatedAt
+                const timeA = (a.completedAt || a.updatedAt) ? new Date(a.completedAt || a.updatedAt).getTime() : 0;
+                const timeB = (b.completedAt || b.updatedAt) ? new Date(b.completedAt || b.updatedAt).getTime() : 0;
+                return timeB - timeA;
             }
         });
     }, [tasks, optimisticTasks, optimisticUpdates]);

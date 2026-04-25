@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { CreateTransactionInput, Transaction, Subscription, SavingsGoal } from '@/lib/types';
-import { addMonths, addYears, isBefore, startOfDay } from 'date-fns';
+import { addMonths, addYears, addDays, isBefore, startOfDay } from 'date-fns';
 
 // Transactions
 export const addTransaction = async (userId: string, data: CreateTransactionInput) => {
@@ -135,7 +135,9 @@ export const refreshSubscriptionDate = async (subscription: Subscription) => {
     // Let's check if it's before today.
     if (isBefore(nextDate, today)) {
         while (isBefore(nextDate, today)) {
-            if (subscription.billingCycle === 'monthly') {
+            if (subscription.billingCycle === 'daily') {
+                nextDate = addDays(nextDate, subscription.billingInterval || 1);
+            } else if (subscription.billingCycle === 'monthly') {
                 nextDate = addMonths(nextDate, subscription.billingInterval || 1);
             } else {
                 nextDate = addYears(nextDate, subscription.billingInterval || 1);

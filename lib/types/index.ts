@@ -111,7 +111,7 @@ export interface Subscription {
   name: string;
   amount: number;
   category: string;
-  billingCycle: 'monthly' | 'yearly';
+  billingCycle: 'daily' | 'monthly' | 'yearly';
   billingInterval: number;
   nextBillingDate: Date;
   active: boolean;

@@ -10,8 +10,8 @@ import {
 } from '@/components/ui/popover';
 import { useState, useMemo, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useTasks } from '@/hooks/useTasks';
-import { useFinance } from '@/hooks/useFinance';
+import { useTasksContext } from '@/components/providers/TasksProvider';
+import { useFinanceContext } from '@/components/providers/FinanceProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { formatDistanceToNow, isPast, isToday, isTomorrow, differenceInDays } from 'date-fns';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -24,8 +24,8 @@ interface TopBarProps {
 
 export function TopBar({ onMenuClick }: TopBarProps) {
   const { user } = useAuth();
-  const { tasks } = useTasks(user?.id);
-  const { subscriptions, savingsGoals } = useFinance(user?.id);
+  const { tasks } = useTasksContext();
+  const { subscriptions, savingsGoals } = useFinanceContext();
   const [readIds, setReadIds] = useState<string[]>([]);
   const [currency, setCurrency] = useState('$');
   const [mounted, setMounted] = useState(false);

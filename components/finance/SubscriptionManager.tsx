@@ -1,27 +1,58 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { CreditCard, Plus, Trash2, Calendar, Pencil } from 'lucide-react';
-import { Subscription } from '@/lib/types';
-import { format, startOfDay, isBefore, addMonths, addYears } from 'date-fns';
-import { addSubscription, deleteSubscription, updateSubscription } from '@/lib/db/finance';
-import { getDaysRemaining } from '@/lib/utils';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { useState, memo, useMemo } from 'react';
+...
+const SubscriptionItem = memo(({ sub, currency, onEdit, onDelete }: { 
+    sub: Subscription, 
+    currency: string, 
+    onEdit: (sub: Subscription) => void, 
+    onDelete: (id: string) => void 
+}) => {
+    const displayDate = useMemo(() => {
+        let date = new Date(sub.nextBillingDate);
+        const today = startOfDay(new Date());
+        while (isBefore(date, today)) {
+            if (sub.billingCycle === 'daily') date = addDays(date, sub.billingInterval || 1);
+            else if (sub.billingCycle === 'monthly') date = addMonths(date, sub.billingInterval || 1);
+            else date = addYears(date, sub.billingInterval || 1);
+        }
+        return date;
+    }, [sub.nextBillingDate, sub.billingCycle, sub.billingInterval]);
 
-import { useFinanceContext } from '@/components/providers/FinanceProvider';
+    const daysLeft = getDaysRemaining(displayDate);
+    const isNear = daysLeft <= 3 && daysLeft >= 0;
+
+    return (
+        <div className="flex items-center justify-between group p-2 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-all">
+            <div className="flex gap-3 items-center">
+                <div className={`p-2 rounded-lg h-9 w-9 flex items-center justify-center ${isNear ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                    <Calendar className="h-4 w-4" />
+                </div>
+                <div>
+                    <p className="text-sm font-semibold">{sub.name}</p>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500">
+                            {currency}{sub.amount} / {sub.billingInterval > 1 ? `${sub.billingInterval} ` : ''}{sub.billingCycle === 'daily' ? 'day' : sub.billingCycle.replace('ly', '')}{sub.billingInterval > 1 ? 's' : ''}
+                        </span>
+                        <Badge variant={isNear ? "destructive" : "outline"} className="h-4 text-[10px] px-1 uppercase">
+                            {daysLeft === 0 ? 'Today' : `${daysLeft}d left`}
+                        </Badge>
+                    </div>
+                </div>
+            </div>
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-500" onClick={() => onEdit(sub)}>
+                    <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => onDelete(sub.id)}>
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+    );
+});
+
+SubscriptionItem.displayName = 'SubscriptionItem';
 
 export function SubscriptionManager({ subscriptions, userId, currency }: { subscriptions: Subscription[], userId: string, currency: string }) {
     const { setSubscriptions } = useFinanceContext();
@@ -31,7 +62,7 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
     const [name, setName] = useState('');
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState('');
-    const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+    const [billingCycle, setBillingCycle] = useState<'daily' | 'monthly' | 'yearly'>('monthly');
     const [billingInterval, setBillingInterval] = useState('1');
     const [nextBillingDate, setNextBillingDate] = useState('');
 
@@ -66,7 +97,6 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
         const currentCycle = billingCycle;
         const currentInterval = parseInt(billingInterval) || 1;
 
-        // Optimistically close and clear
         setIsAddOpen(false);
         resetForm();
 
@@ -127,34 +157,39 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                 } as any);
                 toast.success('Subscription added');
             } catch (error: any) {
-                console.error('Subscription error:', error);
                 toast.error(`Failed to add subscription`);
                 setSubscriptions(prev => prev.filter(s => s.id !== tempId));
             }
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Remove this subscription?')) return;
+    const handleDelete = (id: string) => {
         const originalSubs = [...subscriptions];
         setSubscriptions(prev => prev.filter(s => s.id !== id));
 
-        try {
-            await deleteSubscription(id);
-            toast.success('Subscription removed');
-        } catch (error) {
-            toast.error('Failed to remove');
-            setSubscriptions(originalSubs);
-        }
+        // Use setTimeout to move the async work out of the main event loop
+        // to keep INP low.
+        setTimeout(async () => {
+            try {
+                await deleteSubscription(id);
+                toast.success('Subscription removed');
+            } catch (error) {
+                toast.error('Failed to remove');
+                setSubscriptions(originalSubs);
+            }
+        }, 0);
     };
 
-    const totalMonthly = subscriptions.reduce((sum, sub) => {
-        const interval = sub.billingInterval || 1;
-        const monthlyRate = sub.billingCycle === 'monthly'
-            ? sub.amount / interval
-            : sub.amount / (interval * 12);
-        return sum + (sub.active ? monthlyRate : 0);
-    }, 0);
+    const totalMonthly = useMemo(() => {
+        return subscriptions.reduce((sum, sub) => {
+            const interval = sub.billingInterval || 1;
+            let monthlyRate = 0;
+            if (sub.billingCycle === 'daily') monthlyRate = (sub.amount / interval) * 30.44;
+            else if (sub.billingCycle === 'monthly') monthlyRate = sub.amount / interval;
+            else monthlyRate = sub.amount / (interval * 12);
+            return sum + (sub.active ? monthlyRate : 0);
+        }, 0);
+    }, [subscriptions]);
 
     return (
         <Card className="h-full">
@@ -203,6 +238,7 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
+                                                <SelectItem value="daily">Days</SelectItem>
                                                 <SelectItem value="monthly">Months</SelectItem>
                                                 <SelectItem value="yearly">Years</SelectItem>
                                             </SelectContent>
@@ -232,51 +268,15 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
                             No active subscriptions tracked.
                         </div>
                     ) : (
-                        subscriptions.map(sub => {
-                            let displayDate = new Date(sub.nextBillingDate);
-                            const today = startOfDay(new Date());
-                            
-                            // Calculate projected next date for display if past
-                            while (isBefore(displayDate, today)) {
-                                if (sub.billingCycle === 'monthly') {
-                                    displayDate = addMonths(displayDate, sub.billingInterval || 1);
-                                } else {
-                                    displayDate = addYears(displayDate, sub.billingInterval || 1);
-                                }
-                            }
-
-                            const daysLeft = getDaysRemaining(displayDate);
-                            const isNear = daysLeft <= 3 && daysLeft >= 0;
-
-                            return (
-                                <div key={sub.id} className="flex items-center justify-between group p-2 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-md border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-all">
-                                    <div className="flex gap-3 items-center">
-                                        <div className={`p-2 rounded-lg h-9 w-9 flex items-center justify-center ${isNear ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
-                                            <Calendar className="h-4 w-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold">{sub.name}</p>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs text-slate-500">
-                                                    {currency}{sub.amount} / {sub.billingInterval > 1 ? `${sub.billingInterval} ` : ''}{sub.billingCycle.replace('ly', '')}{sub.billingInterval > 1 ? 's' : ''}
-                                                </span>
-                                                <Badge variant={isNear ? "destructive" : "outline"} className="h-4 text-[10px] px-1 uppercase">
-                                                    {daysLeft === 0 ? 'Today' : `${daysLeft}d left`}
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-500" onClick={() => handleOpenEdit(sub)}>
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => handleDelete(sub.id)}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            );
-                        })
+                        subscriptions.map(sub => (
+                            <SubscriptionItem 
+                                key={sub.id} 
+                                sub={sub} 
+                                currency={currency} 
+                                onEdit={handleOpenEdit} 
+                                onDelete={handleDelete} 
+                            />
+                        ))
                     )}
                 </div>
             </CardContent>

@@ -149,7 +149,7 @@ create table if not exists subscriptions (
   user_id uuid references auth.users not null,
   name text not null,
   amount decimal(12,2) not null,
-  billing_cycle text not null check (billing_cycle in ('monthly', 'yearly')),
+  billing_cycle text not null check (billing_cycle in ('daily', 'monthly', 'yearly')),
   billing_interval integer default 1,
   category text default 'General',
   next_billing_date date not null,
