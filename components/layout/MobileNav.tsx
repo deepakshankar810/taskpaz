@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Calendar, Plus, Folder, Wallet } from 'lucide-react';
+import { LayoutDashboard, Calendar, Plus, Folder, Wallet, Focus } from 'lucide-react';
 import { QuickActionPopup } from './QuickActionPopup';
 
 const mobileItems = [
   { name: 'Home', href: '/', icon: LayoutDashboard },
+  { name: 'Focus', href: '/focus', icon: Focus },
   { name: 'Calendar', href: '/tasks?view=calendar', icon: Calendar },
 ];
 

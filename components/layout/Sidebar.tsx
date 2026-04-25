@@ -16,11 +16,13 @@ import {
   Settings,
   LogOut,
   Wallet,
+  Focus,
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
+  { name: 'Focus', href: '/focus', icon: Focus },
   { name: 'Projects', href: '/projects', icon: Folder },
   { name: 'Finance', href: '/finance', icon: Wallet },
   { name: 'Analytics', href: '/analytics', icon: BarChart },
