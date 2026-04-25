@@ -80,14 +80,14 @@ export default function AboutPage() {
                       <Microscope className="h-5 w-5 text-indigo-500 mt-1" />
                       <div>
                         <p className="text-sm font-bold">Scientific Background</p>
-                        <p className="text-xs text-slate-500">M.Sc in Biotechnology from Amrita Vishwa Vidyapeetham. Specializing in Molecular Biology and Computational Chemistry.</p>
+                        <p className="text-xs text-slate-500">M.Sc in Biotechnology from Sri Ramachandra Institute of Higher Education and Research.</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-4">
                       <Code2 className="h-5 w-5 text-blue-500 mt-1" />
                       <div>
                         <p className="text-sm font-bold">Technical Contributions</p>
-                        <p className="text-xs text-slate-500">Proficient in Python, SQL, and Data Science. Creator of juProt, published in Springer Nature.</p>
+                        <p className="text-xs text-slate-500">Proficient in Julia, AI assisted coding, and Data Science. Co-creator of juProt, published in Springer Nature.</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-4">
@@ -148,7 +148,7 @@ export default function AboutPage() {
 
         {/* Closing Footer */}
         <footer className="text-center py-10 space-y-4 border-t border-slate-100 dark:border-slate-800">
-          <p className="text-slate-400 text-sm">© 2024 Taskpaz. Built with ❤️ by Deepak S P.</p>
+          <p className="text-slate-400 text-sm">© 2026 Taskpaz. Built with ❤️ by Deepak S P.</p>
         </footer>
       </div>
 
