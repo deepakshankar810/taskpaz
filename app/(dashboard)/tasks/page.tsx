@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { createTask, updateTask as firestoreUpdateTask } from '@/lib/db/tasks';
+import { createTask, updateTask } from '@/lib/db/tasks';
 import { CreateTaskInput } from '@/lib/types';
 import { useTasksContext } from '@/components/providers/TasksProvider';
 import { Button } from '@/components/ui/button';
@@ -117,7 +117,7 @@ function TasksContent() {
     toast.success('Task updated');
 
     // 2. Background Sync
-    firestoreUpdateTask(taskId, data).catch((error) => {
+    updateTask(taskId, data).catch((error) => {
       console.error('Update task error:', error);
       toast.error('Failed to sync changes.');
     });
