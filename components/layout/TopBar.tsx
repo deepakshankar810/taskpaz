@@ -14,6 +14,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { useFinance } from '@/hooks/useFinance';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { formatDistanceToNow, isPast, isToday, isTomorrow, differenceInDays } from 'date-fns';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -26,6 +27,23 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const [readIds, setReadIds] = useState<string[]>([]);
   const [currency, setCurrency] = useState('$');
   const [mounted, setMounted] = useState(false);
+  
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') || '');
+
+  useEffect(() => {
+    setSearchQuery(searchParams?.get('q') || '');
+  }, [searchParams]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/tasks?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push(`/tasks`);
+    }
+  };
 
   // Load read status and currency from localStorage
   useEffect(() => {
@@ -185,14 +203,16 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <div className="relative hidden md:block w-96">
+        <form onSubmit={handleSearch} className="relative hidden md:block w-96">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
           <Input
             type="search"
             placeholder="Search tasks..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-slate-50 pl-9 dark:bg-slate-900 focus-visible:ring-1"
           />
-        </div>
+        </form>
       </div>
 
       <div className="flex items-center gap-2">

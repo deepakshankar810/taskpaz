@@ -37,6 +37,17 @@ function TasksContent() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [activeTab, setActiveTab] = useState("list");
 
+  const searchQuery = searchParams?.get('q')?.toLowerCase() || '';
+
+  const filteredTasks = tasks.filter(task => {
+    if (!searchQuery) return true;
+    return (
+      task.title?.toLowerCase().includes(searchQuery) ||
+      task.description?.toLowerCase().includes(searchQuery) ||
+      task.category?.toLowerCase().includes(searchQuery)
+    );
+  });
+
   // Check for ?new=true to open modal or ?view=calendar for tab
   useEffect(() => {
     if (searchParams.get('new') === 'true') {
@@ -161,7 +172,7 @@ function TasksContent() {
   };
 
   // Calendar specific filter
-  const selectedDateTasks = tasks.filter(task =>
+  const selectedDateTasks = filteredTasks.filter(task =>
     date && task.dueDate && isSameDay(new Date(task.dueDate), date)
   );
 
@@ -228,14 +239,14 @@ function TasksContent() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {loading ? (
               Array(6).fill(0).map((_, i) => <TaskSkeleton key={i} />)
-            ) : tasks.length === 0 ? (
+            ) : filteredTasks.length === 0 ? (
               <div className="col-span-full text-center py-12 text-slate-500 bg-white dark:bg-slate-900 rounded-lg border border-dashed border-slate-300 dark:border-slate-800">
                 <Plus className="h-12 w-12 mx-auto text-slate-300 mb-4" />
                 <p className="text-lg font-medium">No tasks found</p>
                 <p className="text-sm">Create your first task to get started!</p>
               </div>
             ) : (
-              tasks
+              filteredTasks
                 .map(task => (
                   <TaskCard
                     key={task.id}
