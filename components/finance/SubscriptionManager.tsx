@@ -204,7 +204,7 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
         return subscriptions.reduce((sum, sub) => {
             const interval = sub.billingInterval || 1;
             let monthlyRate = 0;
-            if (sub.billingCycle === 'daily') monthlyRate = (sub.amount / interval) * 30.44;
+            if (sub.billingCycle === 'daily') monthlyRate = (sub.amount / interval) * 30;
             else if (sub.billingCycle === 'monthly') monthlyRate = sub.amount / interval;
             else monthlyRate = sub.amount / (interval * 12);
             return sum + (sub.active ? monthlyRate : 0);
@@ -280,7 +280,7 @@ export function SubscriptionManager({ subscriptions, userId, currency }: { subsc
             <CardContent>
                 <div className="mb-4 p-3 bg-purple-50 dark:bg-purple-900/10 rounded-lg flex justify-between items-center text-sm">
                     <span className="text-slate-600 dark:text-slate-400">Monthly Commitment:</span>
-                    <span className="font-bold text-purple-600">{currency}{totalMonthly.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    <span className="font-bold text-purple-600">{currency}{totalMonthly.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="space-y-3">
                     {subscriptions.length === 0 ? (
