@@ -13,22 +13,46 @@ const STATIONS = [
     thumbnail: 'https://img.youtube.com/vi/jfKfPfyJRdk/0.jpg',
   },
   {
-    id: '5yx6BWVnrKY', // Coffee Shop Jazz
-    name: 'Coffee Shop Jazz',
-    author: 'Lofi Jazz Records',
+    id: '5yx6BWVnrKY', // Chillhop
+    name: 'Chillhop Radio',
+    author: 'Chillhop Music',
     thumbnail: 'https://img.youtube.com/vi/5yx6BWVnrKY/0.jpg',
   },
   {
-    id: 'r_L6E8Y5G2M', // Synthwave / Chillwave
-    name: 'Synthwave Radio',
+    id: 'hHW1oY26kxQ', // Deep Focus
+    name: 'Deep Focus Ambient',
+    author: 'Study MD',
+    thumbnail: 'https://img.youtube.com/vi/hHW1oY26kxQ/0.jpg',
+  },
+  {
+    id: 'DWcJFNfaw9c', // Classical
+    name: 'Classical Piano',
+    author: 'HALIDONMUSIC',
+    thumbnail: 'https://img.youtube.com/vi/DWcJFNfaw9c/0.jpg',
+  },
+  {
+    id: 'r_L6E8Y5G2M', // Synthwave
+    name: 'Cyberpunk Focus',
     author: 'The Prime Thanatos',
     thumbnail: 'https://img.youtube.com/vi/r_L6E8Y5G2M/0.jpg',
   },
   {
     id: 'nDq9o7V-09w', // Nature / Rain
-    name: 'Rainy Night',
+    name: 'Nature & Rain',
     author: 'Nature Sounds',
     thumbnail: 'https://img.youtube.com/vi/nDq9o7V-09w/0.jpg',
+  },
+  {
+    id: 'V1Pl8z_fDbg', // Jazz
+    name: 'Morning Jazz',
+    author: 'Coffee Shop Music',
+    thumbnail: 'https://img.youtube.com/vi/V1Pl8z_fDbg/0.jpg',
+  },
+  {
+    id: '9S_B38S0RPo', // White Noise
+    name: 'Deep White Noise',
+    author: 'Focus Lab',
+    thumbnail: 'https://img.youtube.com/vi/9S_B38S0RPo/0.jpg',
   },
 ];
 
