@@ -1,0 +1,186 @@
+'use client';
+
+import { Github, Linkedin, Globe, Mail, Sparkles, Zap, Shield, Heart, Code2, Microscope, LineChart } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+
+export default function AboutPage() {
+  return (
+    <div className="min-h-screen pb-20">
+      {/* Hero Section */}
+      <section className="relative h-[400px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 text-white px-6">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 -left-4 w-72 h-72 bg-white rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
+          <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
+        </div>
+        
+        <div className="relative text-center space-y-4 max-w-3xl">
+          <h1 className="text-5xl md:text-6xl font-black tracking-tighter italic">Taskpaz.</h1>
+          <p className="text-xl md:text-2xl text-blue-100 font-medium">Elevating productivity through science and design.</p>
+          <div className="flex justify-center gap-2 pt-4">
+            <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-semibold backdrop-blur-md border border-white/20">v1.2.0 Premium</span>
+            <span className="px-3 py-1 bg-green-500/20 rounded-full text-xs font-semibold backdrop-blur-md border border-green-500/20">System Live</span>
+          </div>
+        </div>
+      </section>
+
+      <div className="max-w-6xl mx-auto px-6 -mt-20 relative z-10 space-y-12">
+        {/* Core Mission Card */}
+        <Card className="border-none shadow-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl overflow-hidden">
+          <CardContent className="p-8 md:p-12 grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Our Mission</h2>
+              <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+                Taskpaz was born from a simple realization: productivity isn't just about managing tasks; it's about managing your **Focus** and **Energy**. 
+              </p>
+              <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+                By combining behavioral science with modern engineering, we've built a sanctuary for deep work. Whether you're a developer, a researcher, or a creative, Taskpaz provides the tools to enter your flow state and stay there.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-6 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 space-y-3">
+                <Sparkles className="h-8 w-8 text-blue-600" />
+                <h4 className="font-bold">Aesthetics</h4>
+                <p className="text-xs text-slate-500">Premium design for a premium mind.</p>
+              </div>
+              <div className="p-6 rounded-2xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 space-y-3">
+                <Zap className="h-8 w-8 text-purple-600" />
+                <h4 className="font-bold">Performance</h4>
+                <p className="text-xs text-slate-500">Fast, fluid, and real-time sync.</p>
+              </div>
+              <div className="p-6 rounded-2xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 space-y-3">
+                <Shield className="h-8 w-8 text-orange-600" />
+                <h4 className="font-bold">Privacy</h4>
+                <p className="text-xs text-slate-500">Your data, your rules. Fully secured.</p>
+              </div>
+              <div className="p-6 rounded-2xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 space-y-3">
+                <Heart className="h-8 w-8 text-green-600" />
+                <h4 className="font-bold">Flow</h4>
+                <p className="text-xs text-slate-500">Built-in radio & Pomodoro timer.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Creator Section */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <h2 className="text-3xl font-bold tracking-tight px-2">Meet the Creator</h2>
+            <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+              <CardContent className="p-0 flex flex-col md:flex-row">
+                <div className="md:w-1/3 bg-slate-100 dark:bg-slate-800 flex items-center justify-center p-12">
+                   <div className="relative group">
+                     <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                     <div className="relative h-40 w-40 rounded-full bg-white dark:bg-slate-900 flex items-center justify-center text-5xl font-black text-blue-600 shadow-inner">
+                        DSP
+                     </div>
+                   </div>
+                </div>
+                <div className="flex-1 p-8 md:p-10 space-y-6">
+                  <div>
+                    <h3 className="text-2xl font-bold">Deepak S P</h3>
+                    <p className="text-blue-600 dark:text-blue-400 font-medium">Biotechnologist & Data Science Enthusiast</p>
+                  </div>
+                  
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed italic">
+                    "Bridging the gap between Life Sciences and Technology to build tools that solve real-world problems."
+                  </p>
+
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4">
+                      <Microscope className="h-5 w-5 text-indigo-500 mt-1" />
+                      <div>
+                        <p className="text-sm font-bold">Scientific Background</p>
+                        <p className="text-xs text-slate-500">M.Sc in Biotechnology. Specialist in Molecular Biology and Computational Chemistry.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <Code2 className="h-5 w-5 text-blue-500 mt-1" />
+                      <div>
+                        <p className="text-sm font-bold">Tech Expertise</p>
+                        <p className="text-xs text-slate-500">Proficient in Python, SQL, and Full-Stack Development. Creator of juProt (Springer Nature).</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <LineChart className="h-5 w-5 text-green-500 mt-1" />
+                      <div>
+                        <p className="text-sm font-bold">Data Strategy</p>
+                        <p className="text-xs text-slate-500">Associate STEM Content Analyst at Clarivate, specializing in biological sequence indexing.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 pt-4">
+                    <Button variant="outline" size="sm" asChild className="gap-2">
+                      <a href="https://www.linkedin.com/in/deepak-s-p-rs7176005/" target="_blank" rel="noopener noreferrer">
+                        <Linkedin className="h-4 w-4" /> LinkedIn
+                      </a>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild className="gap-2">
+                      <a href="https://github.com/deepakshankar810" target="_blank" rel="noopener noreferrer">
+                        <Github className="h-4 w-4" /> GitHub
+                      </a>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild className="gap-2">
+                      <a href="https://deepakshankar810.github.io/portfolio/" target="_blank" rel="noopener noreferrer">
+                        <Globe className="h-4 w-4" /> Portfolio
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-6 pt-12 lg:pt-20">
+            <h3 className="font-bold text-lg px-2">Tech Stack</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {['Next.js 15', 'Tailwind v4', 'Supabase', 'TypeScript', 'Lucide Icons', 'Vercel'].map(tech => (
+                <div key={tech} className="p-3 text-center rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-xs font-semibold shadow-sm">
+                  {tech}
+                </div>
+              ))}
+            </div>
+            
+            <Card className="bg-gradient-to-br from-blue-600 to-indigo-700 border-none text-white overflow-hidden relative">
+              <CardContent className="p-6 space-y-4">
+                <Sparkles className="absolute -top-4 -right-4 h-24 w-24 opacity-10" />
+                <h4 className="font-bold text-lg">Contact Deepak</h4>
+                <p className="text-xs text-blue-100">Interested in collaborating on Biotechnology or AI projects?</p>
+                <Button className="w-full bg-white text-blue-600 hover:bg-blue-50 font-bold" asChild>
+                  <a href="mailto:deepakshankar810@gmail.com">
+                    <Mail className="h-4 w-4 mr-2" /> Send an Email
+                  </a>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Closing Footer */}
+        <footer className="text-center py-10 space-y-4 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-slate-400 text-sm">© 2024 Taskpaz. Built with ❤️ by Deepak S P.</p>
+        </footer>
+      </div>
+
+      <style jsx global>{`
+        @keyframes blob {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
+    </div>
+  );
+}

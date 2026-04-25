@@ -28,6 +28,7 @@ const navItems = [
   { name: 'Projects', href: '/projects', icon: Folder },
   { name: 'Finance', href: '/finance', icon: Wallet },
   { name: 'Analytics', href: '/analytics', icon: BarChart },
+  { name: 'About', href: '/about', icon: BookOpen },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
