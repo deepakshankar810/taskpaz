@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import * as timerStore from '@/lib/focusTimerStore';
+import { FocusMusicPlayer } from '@/components/focus/FocusMusicPlayer';
 
 const PRESETS = [
   { label: 'Quick Focus', minutes: 15, icon: Flame, color: 'bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800' },
@@ -223,6 +224,8 @@ export default function FocusPage() {
 
         {/* Right: Stats & Session Log */}
         <div className="space-y-6">
+          <FocusMusicPlayer />
+          
           {/* Stats */}
           <Card>
             <CardHeader className="pb-2">
