@@ -152,14 +152,14 @@ export default function AboutPage() {
                       <Code2 className="h-5 w-5 text-blue-500 mt-1" />
                       <div>
                         <p className="text-sm font-bold">Technical Contributions</p>
-                        <p className="text-xs text-slate-500">Proficient in Julia, AI assisted coding, and Data Science. Co-creator of juProt, published in Springer Nature.</p>
+                        <p className="text-xs text-slate-500">Proficient in Julia, AI assisted coding, and Data Science. Co-creator of juProt.</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-4">
                       <LineChart className="h-5 w-5 text-green-500 mt-1" />
                       <div>
                         <p className="text-sm font-bold">Professional Role</p>
-                        <p className="text-xs text-slate-500">Currently at Clarivate, focusing on biological sequence indexing and STEM content analysis.</p>
+                        <p className="text-xs text-slate-500">Currently at Clarivate, focusing on biological sequence indexing-GENESEQ.</p>
                       </div>
                     </div>
                   </div>
@@ -188,8 +188,8 @@ export default function AboutPage() {
 
           <div className="space-y-6 pt-12 lg:pt-20">
             <h3 className="font-bold text-lg px-2">Tech Stack</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {['Next.js 15', 'Tailwind v4', 'Supabase', 'TypeScript', 'Lucide Icons', 'Vercel'].map(tech => (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {['Next.js 15', 'Tailwind v4', 'Supabase', 'TypeScript', 'PostgreSQL', 'Framer Motion', 'Shadcn UI', 'React 19', 'Node.js'].map(tech => (
                 <div key={tech} className="p-3 text-center rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-xs font-semibold shadow-sm">
                   {tech}
                 </div>
