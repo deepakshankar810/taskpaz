@@ -19,22 +19,16 @@ const STATIONS = [
     thumbnail: 'https://img.youtube.com/vi/5yx6BWVnrKY/0.jpg',
   },
   {
-    id: 'hHW1oY26kxQ', // Deep Focus
-    name: 'Deep Focus Ambient',
-    author: 'Study MD',
-    thumbnail: 'https://img.youtube.com/vi/hHW1oY26kxQ/0.jpg',
+    id: '4xDzrJKXOOY', // Synthwave
+    name: 'Synthwave Radio',
+    author: 'Lofi Girl',
+    thumbnail: 'https://img.youtube.com/vi/4xDzrJKXOOY/0.jpg',
   },
   {
-    id: 'DWcJFNfaw9c', // Classical
-    name: 'Classical Piano',
-    author: 'HALIDONMUSIC',
-    thumbnail: 'https://img.youtube.com/vi/DWcJFNfaw9c/0.jpg',
-  },
-  {
-    id: 'r_L6E8Y5G2M', // Synthwave
-    name: 'Cyberpunk Focus',
-    author: 'The Prime Thanatos',
-    thumbnail: 'https://img.youtube.com/vi/r_L6E8Y5G2M/0.jpg',
+    id: 'S0Q4gqBUs7c', // Coffee Shop
+    name: 'Coffee Shop Jazz',
+    author: 'BGM channel',
+    thumbnail: 'https://img.youtube.com/vi/S0Q4gqBUs7c/0.jpg',
   },
   {
     id: 'nDq9o7V-09w', // Nature / Rain
@@ -43,10 +37,16 @@ const STATIONS = [
     thumbnail: 'https://img.youtube.com/vi/nDq9o7V-09w/0.jpg',
   },
   {
-    id: 'V1Pl8z_fDbg', // Jazz
-    name: 'Morning Jazz',
-    author: 'Coffee Shop Music',
-    thumbnail: 'https://img.youtube.com/vi/V1Pl8z_fDbg/0.jpg',
+    id: '36YnV9STBqc', // Ambient
+    name: 'Deep Focus Ambient',
+    author: 'Lofi Records',
+    thumbnail: 'https://img.youtube.com/vi/36YnV9STBqc/0.jpg',
+  },
+  {
+    id: 'LpWv6eG_NPI', // Classical
+    name: 'Classical Study',
+    author: 'Study Music',
+    thumbnail: 'https://img.youtube.com/vi/LpWv6eG_NPI/0.jpg',
   },
   {
     id: '9S_B38S0RPo', // White Noise
@@ -111,9 +111,10 @@ export function FocusMusicPlayer() {
         {isPlaying && (
           <div className="hidden">
             <iframe
+              key={currentStation.id}
               width="1"
               height="1"
-              src={`https://www.youtube.com/embed/${currentStation.id}?autoplay=1&controls=0&showinfo=0`}
+              src={`https://www.youtube.com/embed/${currentStation.id}?autoplay=1&mute=0&controls=0&showinfo=0`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             ></iframe>
           </div>
