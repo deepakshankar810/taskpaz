@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Music, Play, Pause, SkipForward, SkipBack, Volume2, Headphones } from 'lucide-react';
+import { Music, Play, Pause, SkipForward, SkipBack, Volume2, Headphones, Search, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
-const STATIONS = [
+const INITIAL_STATIONS = [
   {
     id: 'jfKfPfyJRdk', // Lofi Girl
     name: 'Lofi Hip Hop',
@@ -18,59 +19,55 @@ const STATIONS = [
     author: 'Chillhop Music',
     thumbnail: 'https://img.youtube.com/vi/5yx6BWVnrKY/0.jpg',
   },
-  {
-    id: '4xDzrJKXOOY', // Synthwave
-    name: 'Synthwave Radio',
-    author: 'Lofi Girl',
-    thumbnail: 'https://img.youtube.com/vi/4xDzrJKXOOY/0.jpg',
-  },
-  {
-    id: 'S0Q4gqBUs7c', // Coffee Shop
-    name: 'Coffee Shop Jazz',
-    author: 'BGM channel',
-    thumbnail: 'https://img.youtube.com/vi/S0Q4gqBUs7c/0.jpg',
-  },
-  {
-    id: 'nDq9o7V-09w', // Nature / Rain
-    name: 'Nature & Rain',
-    author: 'Nature Sounds',
-    thumbnail: 'https://img.youtube.com/vi/nDq9o7V-09w/0.jpg',
-  },
-  {
-    id: '36YnV9STBqc', // Ambient
-    name: 'Deep Focus Ambient',
-    author: 'Lofi Records',
-    thumbnail: 'https://img.youtube.com/vi/36YnV9STBqc/0.jpg',
-  },
-  {
-    id: 'LpWv6eG_NPI', // Classical
-    name: 'Classical Study',
-    author: 'Study Music',
-    thumbnail: 'https://img.youtube.com/vi/LpWv6eG_NPI/0.jpg',
-  },
-  {
-    id: '9S_B38S0RPo', // White Noise
-    name: 'Deep White Noise',
-    author: 'Focus Lab',
-    thumbnail: 'https://img.youtube.com/vi/9S_B38S0RPo/0.jpg',
-  },
 ];
 
 export function FocusMusicPlayer() {
-  const [currentStationIndex, setCurrentStationIndex] = useState(0);
+  const [currentStation, setCurrentStation] = useState(INITIAL_STATIONS[0]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   
-  const currentStation = STATIONS[currentStationIndex];
-
   const togglePlay = () => setIsPlaying(!isPlaying);
 
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setIsSearching(true);
+    try {
+      const res = await fetch(`/api/music/search?q=${encodeURIComponent(searchQuery)}`);
+      const data = await res.json();
+      
+      if (data.id) {
+        setCurrentStation(data);
+        setIsPlaying(true);
+        setSearchQuery('');
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const nextStation = () => {
-    setCurrentStationIndex((prev) => (prev + 1) % STATIONS.length);
+    // If we are on an initial station, go to next. If searched, go back to lofi
+    const index = INITIAL_STATIONS.findIndex(s => s.id === currentStation.id);
+    if (index !== -1) {
+      setCurrentStation(INITIAL_STATIONS[(index + 1) % INITIAL_STATIONS.length]);
+    } else {
+      setCurrentStation(INITIAL_STATIONS[0]);
+    }
     setIsPlaying(true);
   };
 
   const prevStation = () => {
-    setCurrentStationIndex((prev) => (prev - 1 + STATIONS.length) % STATIONS.length);
+    const index = INITIAL_STATIONS.findIndex(s => s.id === currentStation.id);
+    if (index !== -1) {
+      setCurrentStation(INITIAL_STATIONS[(index - 1 + INITIAL_STATIONS.length) % INITIAL_STATIONS.length]);
+    } else {
+      setCurrentStation(INITIAL_STATIONS[0]);
+    }
     setIsPlaying(true);
   };
 
@@ -83,6 +80,23 @@ export function FocusMusicPlayer() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Search Bar */}
+        <form onSubmit={handleSearch} className="relative">
+          <Input 
+            placeholder="Search any song..." 
+            className="h-8 bg-white/10 border-white/10 text-white placeholder:text-white/40 pr-8 text-xs focus-visible:ring-indigo-500"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button 
+            type="submit" 
+            disabled={isSearching}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+          >
+            {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          </button>
+        </form>
+
         {/* Album Art & Station Info */}
         <div className="flex items-center gap-4">
           <div className="relative h-16 w-16 rounded-lg overflow-hidden shadow-lg border border-white/10 flex-shrink-0">
@@ -102,8 +116,8 @@ export function FocusMusicPlayer() {
             )}
           </div>
           <div className="min-w-0">
-            <h4 className="font-bold text-sm truncate">{currentStation.name}</h4>
-            <p className="text-xs text-indigo-300 truncate">{currentStation.author}</p>
+            <h4 className="font-bold text-xs truncate">{currentStation.name}</h4>
+            <p className="text-[10px] text-indigo-300 truncate">{currentStation.author}</p>
           </div>
         </div>
 
@@ -134,10 +148,10 @@ export function FocusMusicPlayer() {
             
             <Button 
               size="icon" 
-              className="h-12 w-12 rounded-full bg-white text-indigo-950 hover:bg-indigo-50 shadow-lg shadow-white/10"
+              className="h-10 w-10 rounded-full bg-white text-indigo-950 hover:bg-indigo-50 shadow-lg shadow-white/10"
               onClick={togglePlay}
             >
-              {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-0.5" />}
+              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
             </Button>
 
             <Button 
@@ -150,9 +164,9 @@ export function FocusMusicPlayer() {
             </Button>
           </div>
 
-          <div className="flex items-center gap-2 text-[10px] text-indigo-400 justify-center">
+          <div className="flex items-center gap-2 text-[9px] text-indigo-400 justify-center">
             <Volume2 className="h-3 w-3" />
-            <span>Streaming Live from YouTube</span>
+            <span>YouTube Audio Stream</span>
           </div>
         </div>
       </CardContent>
