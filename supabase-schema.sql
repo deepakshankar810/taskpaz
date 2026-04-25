@@ -97,7 +97,34 @@ begin
       using (exists (select 1 from tasks where tasks.id = task_collaborators.task_id and tasks.user_id = auth.uid()))
       with check (exists (select 1 from tasks where tasks.id = task_collaborators.task_id and tasks.user_id = auth.uid()));
   end if;
+
+  -- Collaborative Access Policies for Tasks
+  if not exists (select 1 from pg_policies where policyname = 'Users can view own or shared tasks') then
+    create policy "Users can view own or shared tasks" on tasks for select
+      using (
+        auth.uid() = user_id or 
+        exists (
+          select 1 from task_collaborators 
+          where task_collaborators.task_id = tasks.id 
+          and task_collaborators.invited_email = auth.jwt() ->> 'email'
+        )
+      );
+  end if;
+
+  if not exists (select 1 from pg_policies where policyname = 'Users can update own or shared tasks') then
+    create policy "Users can update own or shared tasks" on tasks for update
+      using (
+        auth.uid() = user_id or 
+        exists (
+          select 1 from task_collaborators 
+          where task_collaborators.task_id = tasks.id 
+          and task_collaborators.invited_email = auth.jwt() ->> 'email'
+          and task_collaborators.access = 'edit'
+        )
+      );
+  end if;
 end $$;
+
 
 -- Indexes for new tables
 create index if not exists journal_entries_user_date_idx on journal_entries(user_id, date);

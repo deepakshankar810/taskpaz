@@ -75,8 +75,8 @@ export const getUserTasks = async (
     let query = supabase
       .from(TASKS_TABLE)
       .select('*')
-      .eq('user_id', userId)
       .order('created_at', { ascending: false });
+
 
     // Apply filters
     if (filters?.status && filters.status.length > 0) {
@@ -148,8 +148,53 @@ export const updateTask = async (taskId: string, updates: UpdateTaskInput): Prom
 };
 
 export const completeTask = async (taskId: string): Promise<void> => {
-  return updateTask(taskId, { status: 'completed' });
+  try {
+    // 1. Fetch current task to check for recurrence
+    const { data: task, error: fetchError } = await supabase
+      .from(TASKS_TABLE)
+      .select('*')
+      .eq('id', taskId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // 2. Mark current task as completed
+    await updateTask(taskId, { status: 'completed' });
+
+    // 3. Handle recurrence
+    if (task.recurring_pattern && task.recurring_pattern !== 'none') {
+      const nextDueDate = new Date(task.due_date || new Date());
+      
+      if (task.recurring_pattern === 'daily') {
+        nextDueDate.setDate(nextDueDate.getDate() + 1);
+      } else if (task.recurring_pattern === 'weekly') {
+        nextDueDate.setDate(nextDueDate.getDate() + 7);
+      } else if (task.recurring_pattern === 'monthly') {
+        nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+      }
+
+      // Create the next occurrence
+      await createTask(task.user_id, {
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        category: task.category,
+        dueDate: nextDueDate,
+        projectId: task.project_id,
+        tags: task.tags,
+        subtasks: (task.subtasks || []).map((s: any) => ({ ...s, completed: false })), // Reset subtasks
+        recurringPattern: task.recurring_pattern,
+        estimatedMinutes: task.estimated_minutes,
+        dependencies: task.dependencies,
+        sharedWith: task.shared_with,
+      });
+    }
+  } catch (error) {
+    console.error('[completeTask] Error:', error);
+    throw error;
+  }
 };
+
 
 export const deleteTask = async (taskId: string): Promise<void> => {
   try {

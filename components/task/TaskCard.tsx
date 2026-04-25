@@ -8,6 +8,7 @@ import { PriorityBadge } from './PriorityBadge';
 import { CategoryBadge } from './CategoryBadge';
 import { Badge } from '@/components/ui/badge';
 import { useTasksContext } from '@/components/providers/TasksProvider';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { CollaboratorModal } from './CollaboratorModal';
 import { useState } from 'react';
 
@@ -19,8 +20,12 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, onComplete, onDelete, onEdit }: TaskCardProps) {
+  const { user } = useAuth();
   const { tasks } = useTasksContext();
   const [isShareOpen, setIsShareOpen] = useState(false);
+
+  // Check if shared from someone else
+  const isShared = user && task.userId !== user.id;
 
   // Check if blocked by other tasks
   const blockedBy = tasks.filter(t => task.dependencies?.includes(t.id) && t.status !== 'completed');
@@ -39,6 +44,12 @@ export function TaskCard({ task, onComplete, onDelete, onEdit }: TaskCardProps) 
               <div className="flex items-center gap-2 flex-wrap">
                 <PriorityBadge priority={task.priority} />
                 <CategoryBadge category={task.category} />
+                {isShared && (
+                  <Badge variant="secondary" className="h-5 px-1.5 gap-1 text-[10px] bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-900/20 dark:text-purple-400">
+                    <Users className="h-3 w-3" />
+                    Shared
+                  </Badge>
+                )}
                 {isBlocked && (
                   <Badge variant="destructive" className="h-5 px-1.5 gap-1 text-[10px] animate-pulse">
                     <AlertTriangle className="h-3 w-3" />
