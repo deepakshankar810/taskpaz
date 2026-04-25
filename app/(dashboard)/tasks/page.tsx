@@ -12,6 +12,7 @@ import { TaskCard } from '@/components/task/TaskCard';
 import { TaskForm } from '@/components/task/TaskForm';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar } from '@/components/ui/calendar';
+import { KanbanBoard } from '@/components/task/KanbanBoard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isSameDay } from 'date-fns';
@@ -229,8 +230,9 @@ function TasksContent() {
       </div>
 
       <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+        <TabsList className="grid w-full max-w-md grid-cols-3 mb-6">
           <TabsTrigger value="list">List View</TabsTrigger>
+          <TabsTrigger value="board">Board View</TabsTrigger>
           <TabsTrigger value="calendar">Calendar View</TabsTrigger>
         </TabsList>
 
@@ -258,6 +260,30 @@ function TasksContent() {
                 ))
             )}
           </div>
+        </TabsContent>
+
+        {/* BOARD VIEW */}
+        <TabsContent value="board">
+          {loading ? (
+            <div className="grid md:grid-cols-3 gap-6">
+              {Array(3).fill(0).map((_, i) => (
+                <div key={i} className="rounded-xl p-4 min-h-[500px] border bg-slate-50 dark:bg-slate-900/50">
+                  <Skeleton className="h-6 w-24 mb-4" />
+                  <div className="space-y-4">
+                    <TaskSkeleton />
+                    <TaskSkeleton />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <KanbanBoard 
+              tasks={filteredTasks}
+              onComplete={handleCompleteTask}
+              onDelete={handleDeleteTask}
+              onEdit={openEditModal}
+            />
+          )}
         </TabsContent>
 
         {/* CALENDAR VIEW */}

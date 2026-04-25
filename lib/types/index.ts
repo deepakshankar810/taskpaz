@@ -16,6 +16,12 @@ export type TaskStatus = 'pending' | 'in-progress' | 'completed' | 'archived';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TaskCategory = 'work' | 'personal' | 'health' | 'finance' | 'shopping' | 'other';
 
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   userId: string;
@@ -30,6 +36,10 @@ export interface Task {
   projectId?: string;
   tags?: string[];
   completedAt?: Date;
+  orderIndex?: number;
+  subtasks?: Subtask[];
+  recurringPattern?: 'none' | 'daily' | 'weekly' | 'monthly';
+  timeSpent?: number;
 }
 
 export interface CreateTaskInput {
@@ -40,10 +50,14 @@ export interface CreateTaskInput {
   dueDate?: Date;
   projectId?: string;
   tags?: string[];
+  orderIndex?: number;
+  subtasks?: Subtask[];
+  recurringPattern?: 'none' | 'daily' | 'weekly' | 'monthly';
 }
 
 export interface UpdateTaskInput extends Partial<CreateTaskInput> {
   status?: TaskStatus;
+  timeSpent?: number;
 }
 
 export interface Project {

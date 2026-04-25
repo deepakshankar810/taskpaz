@@ -19,10 +19,31 @@ create table if not exists tasks (
   category text,
   due_date date,
   project_id uuid,
+  order_index integer default 0,
+  subtasks jsonb default '[]'::jsonb,
+  recurring_pattern text,
+  time_spent integer default 0,
   completed_at timestamptz,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Migration block (safe to run if table already exists)
+do $$
+begin
+  if not exists (select 1 from information_schema.columns where table_name='tasks' and column_name='order_index') then
+    alter table tasks add column order_index integer default 0;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='tasks' and column_name='subtasks') then
+    alter table tasks add column subtasks jsonb default '[]'::jsonb;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='tasks' and column_name='recurring_pattern') then
+    alter table tasks add column recurring_pattern text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='tasks' and column_name='time_spent') then
+    alter table tasks add column time_spent integer default 0;
+  end if;
+end $$;
 
 -- Projects Table
 create table if not exists projects (

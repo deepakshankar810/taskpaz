@@ -22,12 +22,23 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     const requestPermission = useCallback(async () => {
         if (!('Notification' in window)) return;
-        if (Notification.permission === 'default') {
-            await Notification.requestPermission();
+        
+        let permission = Notification.permission;
+        if (permission === 'default') {
+            permission = await Notification.requestPermission();
+        }
+
+        if (permission === 'granted' && 'serviceWorker' in navigator) {
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                console.log('Service Worker registered with scope:', registration.scope);
+            } catch (error) {
+                console.error('Service Worker registration failed:', error);
+            }
         }
     }, []);
 
-    const sendNotification = useCallback((title: string, options?: NotificationOptions) => {
+    const sendNotification = useCallback(async (title: string, options?: NotificationOptions) => {
         if (!user?.id) return;
 
         // Check local storage for browser notification toggle
@@ -35,10 +46,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (!browserNotifsEnabled) return;
 
         if (Notification.permission === 'granted') {
-            new Notification(title, {
-                icon: '/favicon.ico', // Fallback to favicon
-                ...options,
-            });
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.ready;
+                registration.showNotification(title, {
+                    icon: '/favicon.ico',
+                    ...options,
+                });
+            } else {
+                new Notification(title, {
+                    icon: '/favicon.ico', // Fallback to favicon
+                    ...options,
+                });
+            }
         }
     }, [user?.id]);
 

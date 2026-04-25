@@ -71,28 +71,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Suspense fallback={<div className="h-16 border-b bg-white dark:bg-slate-950" />}>
-          <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        </Suspense>
-        <main className="flex-1 overflow-auto relative pb-24 md:pb-0">
-          <ProjectsProvider>
-            <TasksProvider>
-              <FinanceProvider>
-                <NotificationProvider>
-                  {/* Ensure children render instantly within the pre-fetched layout */}
+      <ProjectsProvider>
+        <TasksProvider>
+          <FinanceProvider>
+            <NotificationProvider>
+              <div className="flex flex-1 flex-col overflow-hidden">
+                <Suspense fallback={<div className="h-16 border-b bg-white dark:bg-slate-950" />}>
+                  <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+                </Suspense>
+                <main className="flex-1 overflow-auto relative pb-24 md:pb-0">
                   <div className="animate-in fade-in duration-300">
                     {children}
                   </div>
-                </NotificationProvider>
-              </FinanceProvider>
-            </TasksProvider>
-          </ProjectsProvider>
-        </main>
-      </div>
+                </main>
+              </div>
 
-      {/* Mobile Bottom Navigation */}
-      {isMobile && <MobileNav />}
+              {/* Mobile Bottom Navigation */}
+              {isMobile && <MobileNav />}
+            </NotificationProvider>
+          </FinanceProvider>
+        </TasksProvider>
+      </ProjectsProvider>
     </div>
   );
 }
