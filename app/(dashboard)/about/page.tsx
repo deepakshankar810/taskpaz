@@ -25,10 +25,10 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <div className="max-w-6xl mx-auto px-6 -mt-20 relative z-10 space-y-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-10 sm:-mt-20 relative z-10 space-y-12">
         {/* Core Mission Card */}
         <Card className="border-none shadow-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl overflow-hidden">
-          <CardContent className="p-8 md:p-12 grid md:grid-cols-2 gap-12 items-center">
+          <CardContent className="p-6 sm:p-12 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
             <div className="space-y-6">
               <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Our Mission</h2>
               <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -61,13 +61,13 @@ export default function AboutPage() {
         </Card>
 
         {/* Functions and Uses Section */}
-        <section className="space-y-8">
+        <section className="space-y-8 px-2">
           <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold tracking-tight">Powerful Functions. Simple Utility.</h2>
-            <p className="text-slate-500 max-w-2xl mx-auto">Everything you need to manage your day, your money, and your mind in one place.</p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Powerful Functions. Simple Utility.</h2>
+            <p className="text-sm sm:text-base text-slate-500 max-w-2xl mx-auto">Everything you need to manage your day, your money, and your mind in one place.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="group p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <CheckSquare className="h-6 w-6 text-blue-600" />
@@ -129,15 +129,15 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-8 px-2">
           <div className="lg:col-span-2 space-y-8">
-            <h2 className="text-3xl font-bold tracking-tight px-2">The Creator</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight px-2">The Creator</h2>
             <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
               <CardContent className="p-0 flex flex-col md:flex-row">
-                <div className="flex-1 p-8 md:p-10 space-y-6">
+                <div className="flex-1 p-6 sm:p-10 space-y-6">
                   <div>
-                    <h3 className="text-2xl font-bold">Deepak S P</h3>
-                    <p className="text-blue-600 dark:text-blue-400 font-medium">Associate STEM Content Analyst & Biotechnologist</p>
+                    <h3 className="text-xl sm:text-2xl font-bold">Deepak S P</h3>
+                    <p className="text-blue-600 dark:text-blue-400 font-medium text-sm sm:text-base">Associate STEM Content Analyst & Biotechnologist</p>
                   </div>
                   
                   <div className="space-y-4">
