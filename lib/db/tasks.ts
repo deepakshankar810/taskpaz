@@ -30,15 +30,24 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
   try {
     console.log('[createTask] Starting...', { userId, title: input.title });
 
+    // Validate and format date safely
+    let formattedDueDate = null;
+    if (input.dueDate) {
+      const d = input.dueDate instanceof Date ? input.dueDate : new Date(input.dueDate);
+      if (!isNaN(d.getTime())) {
+        formattedDueDate = d.toISOString().split('T')[0];
+      }
+    }
+
     const newTaskData = {
       id: id || undefined,
       user_id: userId,
-      title: input.title,
+      title: input.title || 'Untitled Task',
       description: input.description || '',
       status: 'pending' as TaskStatus,
       priority: input.priority || 'medium' as TaskPriority,
       category: input.category || 'personal' as TaskCategory,
-      due_date: input.dueDate ? (input.dueDate instanceof Date ? input.dueDate.toISOString().split('T')[0] : new Date(input.dueDate).toISOString().split('T')[0]) : null,
+      due_date: formattedDueDate,
       project_id: input.projectId || null,
       order_index: input.orderIndex || 0,
       subtasks: input.subtasks || [],
@@ -50,21 +59,31 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
       shared_with: input.sharedWith || [],
     };
 
+    console.log('[createTask] Final payload:', newTaskData);
+
     const { data, error } = await supabase
       .from(TASKS_TABLE)
       .insert([newTaskData])
-      .select()
-      .single();
+      .select();
 
     if (error) {
-      console.error('[createTask] Supabase Error:', error);
+      console.error('[createTask] Supabase Insert Error:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       throw error;
     }
 
-    console.log('[createTask] Task created successfully:', data.id);
-    return mapTaskRow(data);
+    if (!data || data.length === 0) {
+      throw new Error('Task was inserted but no data was returned.');
+    }
+
+    console.log('[createTask] Task created successfully:', data[0].id);
+    return mapTaskRow(data[0]);
   } catch (error) {
-    console.error('[createTask] Error:', error);
+    console.error('[createTask] Critical Catch Error:', error);
     throw error;
   }
 };
@@ -122,7 +141,12 @@ export const updateTask = async (taskId: string, updates: UpdateTaskInput): Prom
     if (updates.category !== undefined) updateData.category = updates.category;
 
     if (updates.dueDate !== undefined) {
-      updateData.due_date = updates.dueDate ? (updates.dueDate instanceof Date ? updates.dueDate.toISOString().split('T')[0] : new Date(updates.dueDate).toISOString().split('T')[0]) : null;
+      if (updates.dueDate) {
+        const d = updates.dueDate instanceof Date ? updates.dueDate : new Date(updates.dueDate);
+        updateData.due_date = !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : null;
+      } else {
+        updateData.due_date = null;
+      }
     }
 
     if (updates.projectId !== undefined) {
