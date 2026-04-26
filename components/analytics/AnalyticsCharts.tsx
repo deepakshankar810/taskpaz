@@ -1,6 +1,3 @@
-'use client';
-
-import { useMemo } from 'react';
 import {
     BarChart,
     Bar,
@@ -17,8 +14,11 @@ import {
     Area
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity } from 'lucide-react';
+import { Activity, Clock, Brain, Target, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { ProductivityHeatmap } from './ProductivityHeatmap';
+import { MoodProductivityCorrelation } from './MoodProductivityCorrelation';
+import { FinancialForecasting } from './FinancialForecasting';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 const PRIORITY_COLORS = {
@@ -37,6 +37,10 @@ interface AnalyticsChartsProps {
     topCategories: any[];
     completionRate: number;
     currency: string;
+    heatmapData: any[];
+    moodCorrelationData: any[];
+    focusDebtStats: { totalEstimated: number; totalSpent: number; debt: number; ratio: number };
+    financialForecastProps: { currentBalance: number; monthlyTrend: number; currency: string };
 }
 
 export default function AnalyticsCharts({
@@ -47,7 +51,11 @@ export default function AnalyticsCharts({
     categoryChartData,
     topCategories,
     completionRate,
-    currency
+    currency,
+    heatmapData,
+    moodCorrelationData,
+    focusDebtStats,
+    financialForecastProps
 }: AnalyticsChartsProps) {
 
     const formatCurrency = (val: number) => {
@@ -57,7 +65,8 @@ export default function AnalyticsCharts({
 
     return (
         <div className="space-y-10">
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+            {/* Top Stats Overview */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium">Efficiency Rate</CardTitle>
@@ -68,7 +77,40 @@ export default function AnalyticsCharts({
                         <p className="text-xs text-slate-500">of total tasks completed</p>
                     </CardContent>
                 </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Focus Efficiency</CardTitle>
+                        <Brain className="h-4 w-4 text-purple-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{Math.round(focusDebtStats.ratio)}%</div>
+                        <p className="text-xs text-slate-500">actual vs. estimated time</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Focus Debt</CardTitle>
+                        <Clock className="h-4 w-4 text-orange-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{Math.max(0, Math.round(focusDebtStats.debt / 60))}h</div>
+                        <p className="text-xs text-slate-500">estimated work remaining</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Monthly Outlook</CardTitle>
+                        <Target className="h-4 w-4 text-green-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{financialForecastProps.monthlyTrend >= 0 ? '+' : ''}{formatCurrency(financialForecastProps.monthlyTrend)}</div>
+                        <p className="text-xs text-slate-500">avg. monthly savings</p>
+                    </CardContent>
+                </Card>
             </div>
+
+            {/* Productivity Heatmap */}
+            <ProductivityHeatmap data={heatmapData} />
 
             {/* Row 1: Task Trends & Priority */}
             <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-2">
@@ -95,6 +137,11 @@ export default function AnalyticsCharts({
                     </CardContent>
                 </Card>
 
+                <MoodProductivityCorrelation data={moodCorrelationData} />
+            </div>
+
+            {/* Row 2: Tasks vs Financial Overview */}
+            <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-2">
                 <Card>
                     <CardHeader>
                         <CardTitle>Task Priority Breakdown</CardTitle>
@@ -125,71 +172,13 @@ export default function AnalyticsCharts({
                         )}
                     </CardContent>
                 </Card>
-            </div>
 
-            {/* Row 2: Tasks vs Financial Overview */}
-            <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Task Category Distribution</CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[300px] w-full mt-4">
-                        {categoryData.length === 0 ? (
-                            <div className="h-full flex items-center justify-center text-slate-400">No data available</div>
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={categoryData}
-                                        cx="50%"
-                                        cy="50%"
-                                        outerRadius={80}
-                                        dataKey="value"
-                                    >
-                                        {categoryData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend verticalAlign="bottom" height={36} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Financial Health (Last 6 Months)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[300px] w-full mt-4">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={financialTrendData}>
-                                <defs>
-                                    <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
-                                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                                    </linearGradient>
-                                    <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#888888' }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fontSize: 12, fill: '#888888' }} axisLine={false} tickLine={false} />
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                <Area type="monotone" dataKey="income" stroke="#22c55e" fillOpacity={1} fill="url(#colorIncome)" />
-                                <Area type="monotone" dataKey="expense" stroke="#ef4444" fillOpacity={1} fill="url(#colorExpense)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </CardContent>
-                </Card>
+                <FinancialForecasting {...financialForecastProps} />
             </div>
 
             <div className="flex flex-col pt-6 border-t">
                 <h2 className="text-xl font-bold">Financial Insights</h2>
-                <p className="text-sm text-slate-500">Breakdown for {format(new Date(), 'MMMM yyyy')}</p>
+                <p className="text-sm text-slate-500">Breakdown and projections for your finances</p>
             </div>
 
             <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">

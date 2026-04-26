@@ -12,12 +12,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import type { User } from '@/lib/types';
 import { StreakCard } from '@/components/dashboard/StreakCard';
+import { Eye, EyeOff, Sparkles } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [currency, setCurrency] = useState('$');
+  const [zenMode, setZenMode] = useState(false);
 
   // Data Hooks
   const { tasks, stats: taskStats, loading: loadingTasks } = useTasksContext();
@@ -78,158 +80,214 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-12 p-6 md:p-10 lg:p-14">
-      {/* Greeting */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          {getGreeting()}, {firstName || (loadingProfile ? <Skeleton className="h-9 w-32" /> : 'there')}!
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">
-          Here is your daily overview.
-        </p>
-      </div>
-
-      {/* Gamification Row */}
-      {!loadingTasks && tasks.length > 0 && (
-        <div className="animate-in fade-in slide-in-from-top-4 duration-500">
-          <StreakCard tasks={tasks} />
+    <div className={`transition-all duration-700 ${zenMode ? 'fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col items-center justify-center p-6 overflow-hidden' : 'space-y-12 p-6 md:p-10 lg:p-14'}`}>
+      
+      {/* Ambient Background for Zen Mode */}
+      {zenMode && (
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/10 blur-[120px] animate-pulse" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-500/10 blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Tasks Pending"
-          value={taskStats?.pending || 0}
-          icon={<Clock className="text-yellow-500" />}
-          loading={loadingTasks}
-        />
-        <StatsCard
-          title="Completed Tasks"
-          value={taskStats?.completed || 0}
-          icon={<CheckCircle2 className="text-green-500" />}
-          loading={loadingTasks}
-        />
-        <StatsCard
-          title="Total Projects"
-          value={projects.length}
-          icon={<Folder className="text-blue-500" />}
-          loading={loadingProjects}
-        />
-      </div>
+      {/* Header */}
+      {!zenMode ? (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              {getGreeting()}, {firstName || (loadingProfile ? <Skeleton className="h-9 w-32" /> : 'there')}!
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">
+              Here is your daily overview.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setZenMode(true)} className="gap-2 rounded-full px-4 border-slate-200 dark:border-slate-800">
+            <Sparkles className="h-4 w-4 text-blue-500" /> Zen Mode
+          </Button>
+        </div>
+      ) : (
+        <div className="absolute top-8 right-8 z-50">
+          <Button variant="ghost" size="icon" onClick={() => setZenMode(false)} className="rounded-full h-12 w-12 hover:bg-slate-100 dark:hover:bg-slate-900">
+            <Eye className="h-6 w-6 text-slate-400" />
+          </Button>
+        </div>
+      )}
 
-      {/* Main Content Grid */}
-      <div className="grid gap-10 md:grid-cols-2">
-
-        {/* Recent Tasks */}
-        <Card className="h-full">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-slate-500" />
-              Recent Tasks
-            </CardTitle>
-            <Link href="/tasks">
-              <Button variant="ghost" size="sm" className="text-xs">View All</Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {loadingTasks ? (
-              <div className="space-y-2">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            ) : todaysTasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[150px] text-center space-y-2">
-                <p className="text-sm text-slate-500">No active tasks.</p>
-                <Link href="/tasks?new=true"><Button variant="outline" size="sm">Create Task</Button></Link>
-              </div>
+      {zenMode ? (
+        <div className="relative z-10 w-full max-w-2xl text-center space-y-12 animate-in zoom-in-95 duration-700">
+          <div className="space-y-4">
+            <p className="text-sm font-medium text-blue-500 uppercase tracking-[0.2em]">One thing at a time</p>
+            {todaysTasks.length > 0 ? (
+                <>
+                    <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white leading-tight">
+                        {todaysTasks[0].title}
+                    </h2>
+                    {todaysTasks[0].description && (
+                        <p className="text-xl text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
+                            {todaysTasks[0].description}
+                        </p>
+                    )}
+                </>
             ) : (
-              <ul className="space-y-2">
-                {todaysTasks.map(task => (
-                  <Link key={task.id} href={`/tasks`}>
-                    <li className="group rounded border p-3 text-sm bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all flex justify-between items-center cursor-pointer">
-                      <span className="font-medium truncate">{task.title}</span>
-                      <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${task.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' :
-                        task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30' :
-                          'bg-slate-100 text-slate-600 dark:bg-slate-800'
-                        }`}>
-                        {task.priority}
-                      </span>
-                    </li>
-                  </Link>
-                ))}
-              </ul>
+                <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
+                    You're all caught up!
+                </h2>
             )}
-          </CardContent>
-        </Card>
+          </div>
+          
+          <div className="flex flex-col items-center gap-6">
+            {todaysTasks.length > 0 && (
+                <Button size="lg" className="rounded-full px-10 h-14 bg-blue-600 hover:bg-blue-700 text-lg shadow-xl shadow-blue-500/20">
+                    Mark as Done
+                </Button>
+            )}
+            <p className="text-slate-400 text-sm italic">Focus on the present moment.</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Gamification Row */}
+          {!loadingTasks && tasks.length > 0 && (
+            <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+              <StreakCard tasks={tasks} />
+            </div>
+          )}
 
-        {/* Recent Projects */}
-        <Card className="h-full">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Folder className="h-5 w-5 text-slate-500" />
-              Recent Projects
-            </CardTitle>
-            <Link href="/projects">
-              <Button variant="ghost" size="sm" className="text-xs">View All</Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {loadingProjects ? (
-              <div className="space-y-2">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            ) : recentProjects.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[150px] text-center space-y-2">
-                <p className="text-sm text-slate-500">No projects yet.</p>
-                <Link href="/projects"><Button variant="outline" size="sm">Create Project</Button></Link>
-              </div>
-            ) : (
-              <div className="grid gap-2">
-                {recentProjects.map(project => (
-                  <Link key={project.id} href={`/projects/${project.id}`}>
-                    <div className="group flex items-center justify-between p-3 rounded-lg border bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-8 rounded-full" style={{ backgroundColor: project.color }} />
-                        <div>
-                          <h3 className="font-medium text-sm group-hover:text-blue-600 transition-colors">{project.name}</h3>
-                          <p className="text-xs text-slate-500">Updated {new Date(project.updatedAt).toLocaleDateString()}</p>
+          {/* Stats Grid */}
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+            <StatsCard
+              title="Tasks Pending"
+              value={taskStats?.pending || 0}
+              icon={<Clock className="text-yellow-500" />}
+              loading={loadingTasks}
+            />
+            <StatsCard
+              title="Completed Tasks"
+              value={taskStats?.completed || 0}
+              icon={<CheckCircle2 className="text-green-500" />}
+              loading={loadingTasks}
+            />
+            <StatsCard
+              title="Total Projects"
+              value={projects.length}
+              icon={<Folder className="text-blue-500" />}
+              loading={loadingProjects}
+            />
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid gap-10 md:grid-cols-2">
+
+            {/* Recent Tasks */}
+            <Card className="h-full">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-slate-500" />
+                  Recent Tasks
+                </CardTitle>
+                <Link href="/tasks">
+                  <Button variant="ghost" size="sm" className="text-xs">View All</Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                {loadingTasks ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : todaysTasks.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[150px] text-center space-y-2">
+                    <p className="text-sm text-slate-500">No active tasks.</p>
+                    <Link href="/tasks?new=true"><Button variant="outline" size="sm">Create Task</Button></Link>
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {todaysTasks.map(task => (
+                      <Link key={task.id} href={`/tasks`}>
+                        <li className="group rounded border p-3 text-sm bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all flex justify-between items-center cursor-pointer">
+                          <span className="font-medium truncate">{task.title}</span>
+                          <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${task.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' :
+                            task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30' :
+                              'bg-slate-100 text-slate-600 dark:bg-slate-800'
+                            }`}>
+                            {task.priority}
+                          </span>
+                        </li>
+                      </Link>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Recent Projects */}
+            <Card className="h-full">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Folder className="h-5 w-5 text-slate-500" />
+                  Recent Projects
+                </CardTitle>
+                <Link href="/projects">
+                  <Button variant="ghost" size="sm" className="text-xs">View All</Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                {loadingProjects ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : recentProjects.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[150px] text-center space-y-2">
+                    <p className="text-sm text-slate-500">No projects yet.</p>
+                    <Link href="/projects"><Button variant="outline" size="sm">Create Project</Button></Link>
+                  </div>
+                ) : (
+                  <div className="grid gap-2">
+                    {recentProjects.map(project => (
+                      <Link key={project.id} href={`/projects/${project.id}`}>
+                        <div className="group flex items-center justify-between p-3 rounded-lg border bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all cursor-pointer">
+                          <div className="flex items-center gap-3">
+                            <div className="w-2 h-8 rounded-full" style={{ backgroundColor: project.color }} />
+                            <div>
+                              <h3 className="font-medium text-sm group-hover:text-blue-600 transition-colors">{project.name}</h3>
+                              <p className="text-xs text-slate-500">Updated {new Date(project.updatedAt).toLocaleDateString()}</p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-      </div>
+          </div>
 
-      {/* Quick Actions Row */}
-      <div className="flex gap-4 overflow-x-auto pb-2">
-        <Link href="/tasks?new=true" className="flex-1 min-w-[150px]">
-          <Button className="w-full h-auto py-4 flex flex-col gap-1 items-center justify-center" variant="outline">
-            <Plus className="h-5 w-5 mb-1" />
-            <span>New Task</span>
-          </Button>
-        </Link>
-        <Link href="/projects" className="flex-1 min-w-[150px]">
-          <Button className="w-full h-auto py-4 flex flex-col gap-1 items-center justify-center" variant="outline">
-            <Folder className="h-5 w-5 mb-1" />
-            <span>New Project</span>
-          </Button>
-        </Link>
-        <Link href="/finance" className="flex-1 min-w-[150px]">
-          <Button className="w-full h-auto py-4 flex flex-col gap-1 items-center justify-center" variant="outline">
-            <Wallet className="h-5 w-5 mb-1" />
-            <span>Add Transaction</span>
-          </Button>
-        </Link>
-      </div>
-
+          {/* Quick Actions Row */}
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            <Link href="/tasks?new=true" className="flex-1 min-w-[150px]">
+              <Button className="w-full h-auto py-4 flex flex-col gap-1 items-center justify-center" variant="outline">
+                <Plus className="h-5 w-5 mb-1" />
+                <span>New Task</span>
+              </Button>
+            </Link>
+            <Link href="/projects" className="flex-1 min-w-[150px]">
+              <Button className="w-full h-auto py-4 flex flex-col gap-1 items-center justify-center" variant="outline">
+                <Folder className="h-5 w-5 mb-1" />
+                <span>New Project</span>
+              </Button>
+            </Link>
+            <Link href="/finance" className="flex-1 min-w-[150px]">
+              <Button className="w-full h-auto py-4 flex flex-col gap-1 items-center justify-center" variant="outline">
+                <Wallet className="h-5 w-5 mb-1" />
+                <span>Add Transaction</span>
+              </Button>
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   );
 }

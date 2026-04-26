@@ -15,9 +15,12 @@ const AnalyticsCharts = dynamic(() => import('@/components/analytics/AnalyticsCh
   loading: () => <div className="h-[400px] w-full flex items-center justify-center text-slate-400">Loading charts...</div>
 });
 
+import { useJournal } from '@/components/providers/JournalProvider';
+
 export default function AnalyticsPage() {
   const { tasks, stats } = useTasksContext();
-  const { transactions } = useFinanceContext();
+  const { transactions, stats: financeStats } = useFinanceContext();
+  const { entries: journalEntries } = useJournal();
 
   const [currency] = useMemo(() => {
     if (typeof window !== 'undefined') {
@@ -25,6 +28,65 @@ export default function AnalyticsPage() {
     }
     return ['$', () => { }];
   }, []);
+
+  // Productivity Heatmap Data (Last Year)
+  const heatmapData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    tasks.forEach(t => {
+      if (t.status === 'completed' && t.completedAt) {
+        const d = format(toDate(t.completedAt) || new Date(), 'yyyy-MM-dd');
+        counts[d] = (counts[d] || 0) + 1;
+      }
+    });
+    return Object.entries(counts).map(([date, count]) => ({
+      date: new Date(date),
+      count
+    }));
+  }, [tasks]);
+
+  // Mood Correlation Data
+  const moodCorrelationData = useMemo(() => {
+    return journalEntries.map(entry => {
+      const dayTasks = tasks.filter(t => {
+        if (t.status !== 'completed' || !t.completedAt) return false;
+        return format(toDate(t.completedAt) || new Date(), 'yyyy-MM-dd') === entry.date;
+      });
+      return {
+        date: entry.date,
+        mood: entry.mood || 'neutral',
+        tasksCompleted: dayTasks.length
+      };
+    });
+  }, [journalEntries, tasks]);
+
+  // Focus Debt Calculations
+  const focusDebtStats = useMemo(() => {
+    let totalEstimated = 0;
+    let totalSpent = 0;
+    tasks.forEach(t => {
+      if (t.estimatedMinutes) totalEstimated += t.estimatedMinutes;
+      if (t.timeSpent) totalSpent += t.timeSpent / 60; // convert seconds to minutes
+    });
+    const debt = totalEstimated - totalSpent;
+    const ratio = totalEstimated > 0 ? (totalSpent / totalEstimated) * 100 : 0;
+    return { totalEstimated, totalSpent, debt, ratio };
+  }, [tasks]);
+
+  // Financial Forecasting
+  const monthlyTrend = useMemo(() => {
+    // Calculate avg monthly income - avg monthly expense over last 6 months
+    const now = new Date();
+    const last6Months = Array.from({ length: 6 }, (_, i) => subMonths(now, i));
+    
+    const monthlyNet = last6Months.map(month => {
+      const monthTrans = transactions.filter(t => isSameMonth(toDate(t.date) || new Date(0), month));
+      const income = monthTrans.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
+      const expense = monthTrans.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+      return income - expense;
+    });
+
+    return monthlyNet.reduce((a, b) => a + b, 0) / 6;
+  }, [transactions]);
 
   // Efficiency (Completion Rate)
   const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
@@ -65,9 +127,9 @@ export default function AnalyticsPage() {
 
   // Financial Trend (Last 6 Months)
   const financialTrendData = useMemo(() => {
-    const last6Months = Array.from({ length: 6 }, (_, i) => startOfMonth(subMonths(new Date(), 5 - i)));
+    const last6MonthsArr = Array.from({ length: 6 }, (_, i) => startOfMonth(subMonths(new Date(), 5 - i)));
 
-    return last6Months.map(date => {
+    return last6MonthsArr.map(date => {
       const monthlyTransactions = transactions.filter((t: Transaction) => {
         const transDate = toDate(t.date);
         return transDate && isSameMonth(transDate, date);
@@ -118,6 +180,14 @@ export default function AnalyticsPage() {
         topCategories={topCategories}
         completionRate={completionRate}
         currency={currency}
+        heatmapData={heatmapData}
+        moodCorrelationData={moodCorrelationData}
+        focusDebtStats={focusDebtStats}
+        financialForecastProps={{
+          currentBalance: financeStats.balance,
+          monthlyTrend,
+          currency
+        }}
       />
     </div>
   );

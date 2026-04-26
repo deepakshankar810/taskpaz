@@ -36,11 +36,15 @@ function formatTime(seconds: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+import { BreathingGuide } from '@/components/focus/BreathingGuide';
+import { Eye, EyeOff } from 'lucide-react';
+
 export default function FocusPage() {
   const [timerState, setTimerState] = useState(timerStore.getState());
   const [customMinutes, setCustomMinutes] = useState(25);
   const [customLabel, setCustomLabel] = useState('Focus Session');
   const [sessionLog, setSessionLog] = useState<SessionEntry[]>([]);
+  const [zenMode, setZenMode] = useState(false);
 
   useEffect(() => {
     const unsub = timerStore.subscribe((s) => {
@@ -77,93 +81,122 @@ export default function FocusPage() {
   };
 
   const { timeLeft, totalSeconds, isRunning, label } = timerState;
+  const isBreak = label.toLowerCase().includes('break');
   const progress = totalSeconds > 0 ? ((totalSeconds - timeLeft) / totalSeconds) * 100 : 0;
-  const radius = 110;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference * (1 - progress / 100);
   const totalFocused = sessionLog.reduce((acc, s) => acc + s.minutes, 0);
 
   return (
-    <div className="space-y-6 p-6 md:p-10 lg:p-14">
+    <div className={`space-y-6 p-6 md:p-10 lg:p-14 transition-all duration-500 ${zenMode ? 'max-w-4xl mx-auto' : ''}`}>
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Focus Mode</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">Set your intention, start the timer, get things done.</p>
-      </div>
+      {!zenMode && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Focus Mode</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">Set your intention, start the timer, get things done.</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setZenMode(true)} className="gap-2">
+            <EyeOff className="h-4 w-4" /> Zen Mode
+          </Button>
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 ${zenMode ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-6 transition-all duration-500`}>
         {/* Left: Timer + Controls */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={`${zenMode ? 'lg:col-span-1' : 'lg:col-span-2'} space-y-6`}>
 
           {/* Main Timer Card */}
-          <Card>
+          <Card className={`relative overflow-hidden transition-all duration-700 ${zenMode ? 'border-none shadow-none bg-transparent py-20' : ''}`}>
+            {zenMode && (
+                <div className="absolute top-4 right-4 z-50">
+                    <Button variant="ghost" size="icon" onClick={() => setZenMode(false)}>
+                        <Eye className="h-5 w-5 text-slate-400" />
+                    </Button>
+                </div>
+            )}
+
             <CardContent className="flex flex-col items-center gap-6 py-10">
               {/* Session label */}
-              <span className="text-sm font-medium text-slate-500 dark:text-slate-400 tracking-wide uppercase">{label}</span>
+              <span className={`text-sm font-medium tracking-wide uppercase transition-colors ${zenMode ? 'text-blue-500 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
+                {label}
+              </span>
 
-              {/* Circular progress */}
-              <div className="relative">
-                <svg width="260" height="260" className="-rotate-90">
-                  <circle
-                    cx="130" cy="130" r={radius}
-                    stroke="currentColor"
-                    strokeWidth="10"
-                    fill="none"
-                    className="text-slate-100 dark:text-slate-800"
-                  />
-                  <circle
-                    cx="130" cy="130" r={radius}
-                    stroke="url(#focusGrad)"
-                    strokeWidth="10"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
-                    style={{ transition: 'stroke-dashoffset 1s linear' }}
-                  />
-                  <defs>
-                    <linearGradient id="focusGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#3b82f6" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className={`text-5xl font-mono font-bold tabular-nums tracking-tight ${isRunning ? 'text-blue-600 dark:text-blue-400' : ''}`}>
-                    {formatTime(timeLeft)}
-                  </span>
-                  <span className="text-slate-400 text-xs mt-1">{Math.round(progress)}% complete</span>
-                </div>
+              {/* Breathing Guide / Timer */}
+              <div className="relative flex flex-col items-center">
+                {isBreak && isRunning ? (
+                    <BreathingGuide />
+                ) : (
+                    <div className="relative">
+                        <svg width="300" height="300" className="-rotate-90">
+                        <circle
+                            cx="150" cy="150" r={130}
+                            stroke="currentColor"
+                            strokeWidth="8"
+                            fill="none"
+                            className="text-slate-100 dark:text-slate-800/50"
+                        />
+                        <circle
+                            cx="150" cy="150" r={130}
+                            stroke="url(#focusGrad)"
+                            strokeWidth="8"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeDasharray={2 * Math.PI * 130}
+                            strokeDashoffset={2 * Math.PI * 130 * (1 - progress / 100)}
+                            style={{ transition: 'stroke-dashoffset 1s linear' }}
+                        />
+                        <defs>
+                            <linearGradient id="focusGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#6366f1" />
+                            <stop offset="100%" stopColor="#3b82f6" />
+                            </linearGradient>
+                        </defs>
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className={`text-6xl font-mono font-bold tabular-nums tracking-tight ${isRunning ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                            {formatTime(timeLeft)}
+                        </span>
+                        {!zenMode && <span className="text-slate-400 text-xs mt-1">{Math.round(progress)}% complete</span>}
+                        </div>
+                    </div>
+                )}
               </div>
 
               {/* Controls */}
-              <div className="flex items-center gap-4">
-                <Button size="icon" variant="outline" className="h-12 w-12 rounded-full" onClick={timerStore.resetTimer}>
-                  <RotateCcw className="h-5 w-5" />
-                </Button>
+              <div className={`flex items-center gap-6 transition-all ${zenMode ? 'scale-110' : ''}`}>
+                {!zenMode && (
+                    <Button size="icon" variant="outline" className="h-12 w-12 rounded-full" onClick={timerStore.resetTimer}>
+                        <RotateCcw className="h-5 w-5" />
+                    </Button>
+                )}
                 <Button
-                  className={`h-16 w-16 rounded-full font-bold shadow-lg shadow-blue-500/20 ${
+                  className={`h-20 w-20 rounded-full font-bold shadow-xl transition-all ${
                     isRunning
-                      ? 'bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white'
-                      : 'bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white'
+                      ? 'bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white'
+                      : 'bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white shadow-blue-500/20'
                   }`}
                   onClick={() => isRunning ? timerStore.pauseTimer() : timerStore.startTimer()}
                 >
-                  {isRunning ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7 ml-0.5" />}
+                  {isRunning ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8 ml-1" />}
                 </Button>
-                <div className="h-12 w-12" />
+                {zenMode && (
+                    <Button size="icon" variant="ghost" className="h-12 w-12 rounded-full" onClick={timerStore.resetTimer}>
+                        <RotateCcw className="h-5 w-5 text-slate-400" />
+                    </Button>
+                )}
+                {!zenMode && <div className="h-12 w-12" />}
               </div>
             </CardContent>
           </Card>
 
           {/* Custom Timer */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Pencil className="h-4 w-4 text-blue-500" />
-                Set Custom Timer
-              </CardTitle>
-            </CardHeader>
+          {!zenMode && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Pencil className="h-4 w-4 text-blue-500" />
+                  Set Custom Timer
+                </CardTitle>
+              </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
@@ -200,76 +233,92 @@ export default function FocusPage() {
               </div>
             </CardContent>
           </Card>
+          )}
 
           {/* Presets */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Quick Presets</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {PRESETS.map(preset => (
-                <button
-                  key={preset.label}
-                  onClick={() => applyPreset(preset)}
-                  className={`flex flex-col gap-2 rounded-xl p-4 text-left border transition-all hover:scale-105 active:scale-95 ${preset.color}`}
-                >
-                  <preset.icon className="h-5 w-5" />
-                  <div>
-                    <p className="text-sm font-semibold">{preset.label}</p>
-                    <p className="text-xs opacity-70">{preset.minutes}m</p>
-                  </div>
-                </button>
-              ))}
+          {!zenMode && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Quick Presets</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {PRESETS.map(preset => (
+                  <button
+                    key={preset.label}
+                    onClick={() => applyPreset(preset)}
+                    className={`flex flex-col gap-2 rounded-xl p-4 text-left border transition-all hover:scale-105 active:scale-95 ${preset.color}`}
+                  >
+                    <preset.icon className="h-5 w-5" />
+                    <div>
+                      <p className="text-sm font-semibold">{preset.label}</p>
+                      <p className="text-xs opacity-70">{preset.minutes}m</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Right: Stats & Session Log */}
         <div className="space-y-6">
-          <FocusMusicPlayer />
+          <div className="transition-all duration-700">
+            <FocusMusicPlayer />
+          </div>
           
-          {/* Stats */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Session Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">{totalFocused}m</div>
-                <p className="text-slate-500 text-sm mt-1">Total focused time</p>
-              </div>
-              <div className="h-px bg-slate-100 dark:bg-slate-800" />
-              <div className="text-slate-600 dark:text-slate-400 text-sm">
-                <span className="font-semibold text-slate-900 dark:text-white">{sessionLog.length}</span> session{sessionLog.length !== 1 ? 's' : ''} completed
-              </div>
-            </CardContent>
-          </Card>
+          {/* Stats & Log (Blurred in Zen Mode) */}
+          {!zenMode && (
+            <div className="space-y-6 animate-in fade-in duration-700">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Session Stats</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">{totalFocused}m</div>
+                    <p className="text-slate-500 text-sm mt-1">Total focused time</p>
+                  </div>
+                  <div className="h-px bg-slate-100 dark:bg-slate-800" />
+                  <div className="text-slate-600 dark:text-slate-400 text-sm">
+                    <span className="font-semibold text-slate-900 dark:text-white">{sessionLog.length}</span> session{sessionLog.length !== 1 ? 's' : ''} completed
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Session Log */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Session Log</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {sessionLog.length === 0 ? (
-                <p className="text-slate-400 text-sm text-center py-8">
-                  No sessions yet.<br />Start your first focus session!
-                </p>
-              ) : (
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                  {sessionLog.map((entry, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                      <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{entry.label}</p>
-                        <p className="text-xs text-slate-400">
-                          {entry.minutes}m · {new Date(entry.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
+              {/* Session Log */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Session Log</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {sessionLog.length === 0 ? (
+                    <p className="text-slate-400 text-sm text-center py-8">
+                      No sessions yet.<br />Start your first focus session!
+                    </p>
+                  ) : (
+                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                      {sessionLog.map((entry, i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                          <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{entry.label}</p>
+                            <p className="text-xs text-slate-400">
+                              {entry.minutes}m · {new Date(entry.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          
+          {zenMode && (
+            <div className="hidden lg:block blur-xl opacity-10 pointer-events-none select-none space-y-4">
+                <div className="h-32 w-full bg-slate-200 dark:bg-slate-800 rounded-xl" />
+                <div className="h-64 w-full bg-slate-200 dark:bg-slate-800 rounded-xl" />
+            </div>
+          )}
         </div>
       </div>
     </div>

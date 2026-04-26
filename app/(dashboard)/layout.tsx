@@ -13,6 +13,7 @@ import { TasksProvider } from '@/components/providers/TasksProvider';
 import { FinanceProvider } from '@/components/providers/FinanceProvider';
 import { NotificationProvider } from '@/components/providers/NotificationProvider';
 import { MusicProvider } from '@/components/providers/MusicProvider';
+import { JournalProvider } from '@/components/providers/JournalProvider';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -75,23 +76,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <ProjectsProvider>
         <TasksProvider>
           <FinanceProvider>
-            <NotificationProvider>
-              <MusicProvider>
-                <div className="flex flex-1 flex-col overflow-hidden">
-                  <Suspense fallback={<div className="h-16 border-b bg-white dark:bg-slate-950" />}>
-                    <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-                  </Suspense>
-                  <main className="flex-1 overflow-auto relative pb-24 md:pb-0">
-                    <div className="animate-in fade-in duration-300">
-                      {children}
-                    </div>
-                  </main>
-                </div>
+            <JournalProvider>
+              <NotificationProvider>
+                <MusicProvider>
+                  <div className="flex flex-1 flex-col overflow-hidden">
+                    <Suspense fallback={<div className="h-16 border-b bg-white dark:bg-slate-950" />}>
+                      <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+                    </Suspense>
+                    <main className="flex-1 overflow-auto relative pb-24 md:pb-0">
+                      <div className="animate-in fade-in duration-300">
+                        {children}
+                      </div>
+                    </main>
+                  </div>
 
-                {/* Mobile Bottom Navigation */}
-                {isMobile && <MobileNav />}
-              </MusicProvider>
-            </NotificationProvider>
+                  {/* Mobile Bottom Navigation */}
+                  {isMobile && <MobileNav />}
+                </MusicProvider>
+              </NotificationProvider>
+            </JournalProvider>
           </FinanceProvider>
         </TasksProvider>
       </ProjectsProvider>
