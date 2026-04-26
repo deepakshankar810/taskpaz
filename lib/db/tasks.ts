@@ -39,27 +39,35 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
       }
     }
 
+    // Sanitize arrays and UUIDs to prevent 400 errors
+    const cleanTags = (input.tags || []).filter(tag => typeof tag === 'string' && tag.trim() !== '');
+    const cleanDependencies = (input.dependencies || []).filter(id => typeof id === 'string' && id.trim().length === 36);
+    const cleanSubtasks = (input.subtasks || []).filter(st => st.title && st.title.trim() !== '');
+    
+    // Ensure projectId is either a valid UUID or null (never an empty string)
+    const cleanProjectId = (input.projectId && input.projectId.trim().length === 36) ? input.projectId : null;
+
     const newTaskData = {
-      id: id || undefined,
+      id: (id && id.length === 36) ? id : undefined,
       user_id: userId,
-      title: input.title || 'Untitled Task',
+      title: (input.title || 'Untitled Task').trim(),
       description: input.description || '',
       status: 'pending' as TaskStatus,
       priority: input.priority || 'medium' as TaskPriority,
       category: input.category || 'personal' as TaskCategory,
       due_date: formattedDueDate,
-      project_id: input.projectId || null,
+      project_id: cleanProjectId,
       order_index: input.orderIndex || 0,
-      subtasks: input.subtasks || [],
+      subtasks: cleanSubtasks,
       recurring_pattern: input.recurringPattern || 'none',
       time_spent: 0,
-      tags: input.tags || [],
+      tags: cleanTags,
       estimated_minutes: input.estimatedMinutes || null,
-      dependencies: input.dependencies || [],
+      dependencies: cleanDependencies,
       shared_with: input.sharedWith || [],
     };
 
-    console.log('[createTask] Final payload:', newTaskData);
+    console.log('[createTask] Sanitized payload:', newTaskData);
 
     const { data, error } = await supabase
       .from(TASKS_TABLE)
@@ -67,12 +75,8 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
       .select();
 
     if (error) {
-      console.error('[createTask] Supabase Insert Error:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
+      // Log error as string to see details in user's screenshot if it fails
+      console.error('[createTask] Supabase Error Detail:', JSON.stringify(error));
       throw error;
     }
 
@@ -83,7 +87,7 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
     console.log('[createTask] Task created successfully:', data[0].id);
     return mapTaskRow(data[0]);
   } catch (error) {
-    console.error('[createTask] Critical Catch Error:', error);
+    console.error('[createTask] Critical Catch Error:', JSON.stringify(error));
     throw error;
   }
 };
@@ -150,16 +154,22 @@ export const updateTask = async (taskId: string, updates: UpdateTaskInput): Prom
     }
 
     if (updates.projectId !== undefined) {
-      updateData.project_id = updates.projectId;
+      updateData.project_id = (updates.projectId && updates.projectId.trim().length === 36) ? updates.projectId : null;
     }
 
     if (updates.orderIndex !== undefined) updateData.order_index = updates.orderIndex;
-    if (updates.subtasks !== undefined) updateData.subtasks = updates.subtasks;
+    if (updates.subtasks !== undefined) {
+      updateData.subtasks = (updates.subtasks || []).filter(st => st.title && st.title.trim() !== '');
+    }
     if (updates.recurringPattern !== undefined) updateData.recurring_pattern = updates.recurringPattern;
     if (updates.timeSpent !== undefined) updateData.time_spent = updates.timeSpent;
-    if (updates.tags !== undefined) updateData.tags = updates.tags;
+    if (updates.tags !== undefined) {
+      updateData.tags = (updates.tags || []).filter(tag => typeof tag === 'string' && tag.trim() !== '');
+    }
     if (updates.estimatedMinutes !== undefined) updateData.estimated_minutes = updates.estimatedMinutes;
-    if (updates.dependencies !== undefined) updateData.dependencies = updates.dependencies;
+    if (updates.dependencies !== undefined) {
+      updateData.dependencies = (updates.dependencies || []).filter(id => typeof id === 'string' && id.trim().length === 36);
+    }
     if (updates.sharedWith !== undefined) updateData.shared_with = updates.sharedWith;
 
     const { error } = await supabase
@@ -168,11 +178,11 @@ export const updateTask = async (taskId: string, updates: UpdateTaskInput): Prom
       .eq('id', taskId);
 
     if (error) {
-      console.error('Error updating task:', error);
+      console.error('Error updating task:', JSON.stringify(error));
       throw error;
     }
   } catch (error) {
-    console.error('Catch update task error:', error);
+    console.error('Catch update task error:', JSON.stringify(error));
     throw error;
   }
 };
