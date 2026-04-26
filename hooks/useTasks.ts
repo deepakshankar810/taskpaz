@@ -128,11 +128,13 @@ export function useTasks(userId: string | undefined | null) {
     }, [userId]);
 
     // Optimistic state
+    const [optimisticTasks, setOptimisticTasks] = useState<Task[]>([]);
+    const [optimisticUpdates, setOptimisticUpdates] = useState<Record<string, Partial<Task>>>({});
     const [optimisticDeletedIds, setOptimisticDeletedIds] = useState<Set<string>>(new Set());
 
     const addOptimisticTask = (task: Task) => {
-        setOptimisticTasks(prev => [task, ...prev]);
-        setOptimisticDeletedIds(prev => {
+        setOptimisticTasks((prev: Task[]) => [task, ...prev]);
+        setOptimisticDeletedIds((prev: Set<string>) => {
             const next = new Set(prev);
             next.delete(task.id);
             return next;
@@ -140,8 +142,8 @@ export function useTasks(userId: string | undefined | null) {
     };
 
     const removeOptimisticTask = (taskId: string) => {
-        setOptimisticTasks(prev => prev.filter(t => t.id !== taskId));
-        setOptimisticDeletedIds(prev => {
+        setOptimisticTasks((prev: Task[]) => prev.filter(t => t.id !== taskId));
+        setOptimisticDeletedIds((prev: Set<string>) => {
             const next = new Set(prev);
             next.add(taskId);
             return next;
@@ -149,7 +151,7 @@ export function useTasks(userId: string | undefined | null) {
     };
 
     const optimisticUpdateTask = (taskId: string, updates: Partial<Task>) => {
-        setOptimisticUpdates(prev => ({
+        setOptimisticUpdates((prev: Record<string, Partial<Task>>) => ({
             ...prev,
             [taskId]: { ...(prev[taskId] || {}), ...updates }
         }));
