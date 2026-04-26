@@ -68,7 +68,7 @@ export function WellnessTips() {
 
   useEffect(() => {
     if (isPaused) return;
-    const timer = setInterval(next, 5000); // Shuffle every 5 seconds
+    const timer = setInterval(next, 2500); // Shuffle every 2.5 seconds
     return () => clearInterval(timer);
   }, [next, isPaused]);
 
@@ -93,7 +93,10 @@ export function WellnessTips() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex gap-4 items-start min-h-[80px] animate-in fade-in slide-in-from-right-4 duration-500">
+        <div 
+            key={index}
+            className="flex gap-4 items-start min-h-[80px] animate-in fade-in duration-700 slide-in-from-bottom-1"
+        >
           <div className={`p-3 rounded-xl transition-all duration-500 ${tip.color} shadow-sm`}>
             <tip.icon className="h-5 w-5" />
           </div>
