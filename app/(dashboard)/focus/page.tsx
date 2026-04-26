@@ -8,15 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import * as timerStore from '@/lib/focusTimerStore';
 import { FocusMusicPlayer } from '@/components/focus/FocusMusicPlayer';
-import { useTasksContext } from '@/components/providers/TasksProvider';
-import { updateTask } from '@/lib/db/tasks';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const PRESETS = [
   { label: 'Quick Focus', minutes: 15, icon: Flame, color: 'bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800' },
@@ -54,11 +45,6 @@ export default function FocusPage() {
   const [customLabel, setCustomLabel] = useState('Focus Session');
   const [sessionLog, setSessionLog] = useState<SessionEntry[]>([]);
   const [zenMode, setZenMode] = useState(false);
-  const { tasks } = useTasksContext();
-  const [selectedTaskId, setSelectedTaskId] = useState<string>('none');
-
-  const activeTasks = tasks.filter(t => t.status !== 'completed');
-  const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
   useEffect(() => {
     const unsub = timerStore.subscribe((s) => {
@@ -74,17 +60,6 @@ export default function FocusPage() {
           localStorage.setItem(SESSION_LOG_KEY, JSON.stringify(updated));
           return updated;
         });
-
-        // Sync to database if a task is selected
-        if (selectedTaskId && selectedTaskId !== 'none') {
-            const task = tasks.find(t => t.id === selectedTaskId);
-            if (task) {
-                const newTimeSpent = (task.timeSpent || 0) + s.totalSeconds;
-                updateTask(task.id, { timeSpent: newTimeSpent }).catch(err => {
-                    console.error('Failed to update task focus time:', err);
-                });
-            }
-        }
       }
     });
 
@@ -140,33 +115,6 @@ export default function FocusPage() {
             )}
 
             <CardContent className="flex flex-col items-center gap-6 py-10">
-              {/* Task Selector */}
-              {!zenMode && (
-                <div className="w-full max-w-xs space-y-2">
-                    <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest text-center block">Focus Target</Label>
-                    <Select value={selectedTaskId} onValueChange={setSelectedTaskId}>
-                        <SelectTrigger className="w-full bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
-                            <SelectValue placeholder="Select a task..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="none">General Focus</SelectItem>
-                            {activeTasks.map(task => (
-                                <SelectItem key={task.id} value={task.id}>
-                                    {task.title}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-              )}
-
-              {zenMode && selectedTask && (
-                  <div className="text-center animate-in fade-in slide-in-from-top-2 duration-1000">
-                      <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-1">{selectedTask.title}</h2>
-                      <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold">Current Mission</p>
-                  </div>
-              )}
-
               {/* Session label */}
               <span className={`text-sm font-medium tracking-wide uppercase transition-colors ${zenMode ? 'text-blue-500 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
                 {label}

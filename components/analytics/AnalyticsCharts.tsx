@@ -39,7 +39,6 @@ interface AnalyticsChartsProps {
     currency: string;
     heatmapData: any[];
     moodCorrelationData: any[];
-    focusDebtStats: { totalEstimated: number; totalSpent: number; debt: number; ratio: number };
     financialForecastProps: { currentBalance: number; monthlyTrend: number; currency: string };
 }
 
@@ -54,7 +53,6 @@ export default function AnalyticsCharts({
     currency,
     heatmapData,
     moodCorrelationData,
-    focusDebtStats,
     financialForecastProps
 }: AnalyticsChartsProps) {
 
@@ -75,26 +73,6 @@ export default function AnalyticsCharts({
                     <CardContent>
                         <div className="text-2xl font-bold">{completionRate}%</div>
                         <p className="text-xs text-slate-500">of total tasks completed</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Focus Efficiency</CardTitle>
-                        <Brain className="h-4 w-4 text-purple-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{Math.round(focusDebtStats.ratio)}%</div>
-                        <p className="text-xs text-slate-500">actual vs. estimated time</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Focus Debt</CardTitle>
-                        <Clock className="h-4 w-4 text-orange-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{Math.max(0, Math.round(focusDebtStats.debt / 60))}h</div>
-                        <p className="text-xs text-slate-500">estimated work remaining</p>
                     </CardContent>
                 </Card>
                 <Card>

@@ -21,7 +21,6 @@
 
 ### 📊 Intelligence & Analytics
 *   **Productivity Heatmap**: A GitHub-style visualization of your output over the past year.
-*   **Focus Debt & Efficiency**: Data-driven metrics showing your estimation accuracy vs. actual deep work time.
 *   **Mood Correlation**: Insights into how your emotional state affects your task completion rate.
 *   **Financial Forecasting**: Smart projections based on your 6-month spending trends.
 

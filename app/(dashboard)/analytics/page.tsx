@@ -59,18 +59,8 @@ export default function AnalyticsPage() {
     });
   }, [journalEntries, tasks]);
 
-  // Focus Debt Calculations
-  const focusDebtStats = useMemo(() => {
-    let totalEstimated = 0;
-    let totalSpent = 0;
-    tasks.forEach(t => {
-      if (t.estimatedMinutes) totalEstimated += t.estimatedMinutes;
-      if (t.timeSpent) totalSpent += t.timeSpent / 60; // convert seconds to minutes
-    });
-    const debt = totalEstimated - totalSpent;
-    const ratio = totalEstimated > 0 ? (totalSpent / totalEstimated) * 100 : 0;
-    return { totalEstimated, totalSpent, debt, ratio };
-  }, [tasks]);
+  // Efficiency (Completion Rate)
+  const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
 
   // Financial Forecasting
   const monthlyTrend = useMemo(() => {
@@ -87,9 +77,6 @@ export default function AnalyticsPage() {
 
     return monthlyNet.reduce((a, b) => a + b, 0) / 6;
   }, [transactions]);
-
-  // Efficiency (Completion Rate)
-  const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
 
   // Task Trend Data (Last 30 Days)
   const taskTrendData = useMemo(() => {
@@ -182,7 +169,6 @@ export default function AnalyticsPage() {
         currency={currency}
         heatmapData={heatmapData}
         moodCorrelationData={moodCorrelationData}
-        focusDebtStats={focusDebtStats}
         financialForecastProps={{
           currentBalance: financeStats.balance,
           monthlyTrend,
