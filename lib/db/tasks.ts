@@ -22,8 +22,8 @@ const mapTaskRow = (data: any): Task => ({
   timeSpent: data.time_spent,
   tags: data.tags || [],
   estimatedMinutes: data.estimated_minutes ?? undefined,
-  dependencies: [],
-  sharedWith: [],
+  dependencies: data.dependencies || [],
+  sharedWith: data.shared_with || [],
 });
 
 export const createTask = async (userId: string, input: CreateTaskInput, id?: string): Promise<Task> => {
@@ -38,16 +38,16 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
       status: 'pending' as TaskStatus,
       priority: input.priority || 'medium' as TaskPriority,
       category: input.category || 'personal' as TaskCategory,
-      due_date: input.dueDate ? input.dueDate.toISOString().split('T')[0] : null,
+      due_date: input.dueDate ? (input.dueDate instanceof Date ? input.dueDate.toISOString().split('T')[0] : new Date(input.dueDate).toISOString().split('T')[0]) : null,
       project_id: input.projectId || null,
       order_index: input.orderIndex || 0,
       subtasks: input.subtasks || [],
-      recurring_pattern: input.recurringPattern || null,
+      recurring_pattern: input.recurringPattern || 'none',
       time_spent: 0,
       tags: input.tags || [],
       estimated_minutes: input.estimatedMinutes || null,
-      dependencies: [],
-      shared_with: [],
+      dependencies: input.dependencies || [],
+      shared_with: input.sharedWith || [],
     };
 
     const { data, error } = await supabase
@@ -56,9 +56,12 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[createTask] Supabase Error:', error);
+      throw error;
+    }
 
-    console.log('[createTask] Task created:', data.id);
+    console.log('[createTask] Task created successfully:', data.id);
     return mapTaskRow(data);
   } catch (error) {
     console.error('[createTask] Error:', error);
@@ -119,7 +122,7 @@ export const updateTask = async (taskId: string, updates: UpdateTaskInput): Prom
     if (updates.category !== undefined) updateData.category = updates.category;
 
     if (updates.dueDate !== undefined) {
-      updateData.due_date = updates.dueDate ? updates.dueDate.toISOString().split('T')[0] : null;
+      updateData.due_date = updates.dueDate ? (updates.dueDate instanceof Date ? updates.dueDate.toISOString().split('T')[0] : new Date(updates.dueDate).toISOString().split('T')[0]) : null;
     }
 
     if (updates.projectId !== undefined) {
@@ -132,16 +135,20 @@ export const updateTask = async (taskId: string, updates: UpdateTaskInput): Prom
     if (updates.timeSpent !== undefined) updateData.time_spent = updates.timeSpent;
     if (updates.tags !== undefined) updateData.tags = updates.tags;
     if (updates.estimatedMinutes !== undefined) updateData.estimated_minutes = updates.estimatedMinutes;
-    // Removed sharing updates
+    if (updates.dependencies !== undefined) updateData.dependencies = updates.dependencies;
+    if (updates.sharedWith !== undefined) updateData.shared_with = updates.sharedWith;
 
     const { error } = await supabase
       .from(TASKS_TABLE)
       .update(updateData)
       .eq('id', taskId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating task:', error);
+      throw error;
+    }
   } catch (error) {
-    console.error('Error updating task:', error);
+    console.error('Catch update task error:', error);
     throw error;
   }
 };
