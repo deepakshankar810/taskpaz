@@ -15,7 +15,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { KanbanBoard } from '@/components/task/KanbanBoard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ImportExport } from '@/components/task/ImportExport';
 import { CalendarGrid } from '@/components/task/CalendarGrid';
 import { isSameDay } from 'date-fns';
 import {
@@ -199,7 +198,6 @@ function TasksContent() {
         </div>
 
         <div className="flex items-center gap-3">
-          <ImportExport tasks={tasks} />
           
           <Dialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen}>
             <DialogTrigger asChild>
