@@ -15,11 +15,15 @@ import { useTheme } from 'next-themes';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useThemeAccent } from '@/components/providers/ThemeAccentProvider';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Check } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const { requestPermission, sendNotification } = useNotification();
+  const { vibe, setVibe, availableVibes } = useThemeAccent();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
@@ -151,6 +155,33 @@ export default function SettingsPage() {
                     <SelectItem value="system">System</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="pt-4 border-t space-y-3">
+                <Label className="text-xs uppercase font-bold text-slate-500 tracking-wider">Accent Vibe</Label>
+                <div className="flex flex-wrap gap-3">
+                    <TooltipProvider>
+                        {(Object.entries(availableVibes) as [any, any][]).map(([key, info]) => (
+                            <Tooltip key={key}>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => setVibe(key)}
+                                        className={`group relative h-10 w-10 rounded-xl border-2 transition-all hover:scale-105 active:scale-95 flex items-center justify-center ${
+                                            vibe === key ? 'border-primary ring-2 ring-primary/20 ring-offset-2 dark:ring-offset-slate-950 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'
+                                        }`}
+                                        style={{ backgroundColor: info.color }}
+                                    >
+                                        {vibe === key && <Check className="h-5 w-5 text-white drop-shadow-md" />}
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                    <p className="text-xs font-bold">{info.name}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        ))}
+                    </TooltipProvider>
+                </div>
+                <p className="text-[10px] text-slate-400">Choose a primary accent color that flows through the entire app.</p>
               </div>
             </CardContent>
           </Card>

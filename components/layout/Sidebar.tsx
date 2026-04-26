@@ -101,31 +101,6 @@ export function Sidebar({ onItemClick }: SidebarProps) {
       </nav>
 
       <div className="border-t p-4">
-        {/* Accent Selector */}
-        <div className="mb-6">
-          <p className="mb-3 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Choose your vibe</p>
-          <div className="flex flex-wrap gap-2 px-2">
-            <TooltipProvider>
-              {(Object.entries(availableVibes) as [any, any][]).map(([key, info]) => (
-                <Tooltip key={key}>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => setVibe(key)}
-                      className={`h-6 w-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${
-                        vibe === key ? 'border-white ring-2 ring-primary ring-offset-2 dark:ring-offset-slate-950' : 'border-transparent opacity-60 hover:opacity-100'
-                      }`}
-                      style={{ backgroundColor: info.color }}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p className="text-xs">{info.name}</p>
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-            </TooltipProvider>
-          </div>
-        </div>
-
         <div className="flex items-center gap-3 mb-4">
           {/* Fallback avatar simply using first letter */}
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
