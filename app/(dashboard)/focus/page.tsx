@@ -13,6 +13,8 @@ import { WellnessTips } from '@/components/focus/WellnessTips';
 import { updateTask } from '@/lib/db/tasks';
 import { saveFocusSession, getFocusSessions, FocusSession } from '@/lib/db/focus';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useThemeAccent } from '@/components/providers/ThemeAccentProvider';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -20,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Check, Info } from 'lucide-react';
 
 const PRESETS = [
   { label: 'Quick Focus', minutes: 15, icon: Flame, color: 'bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800' },
@@ -65,6 +68,7 @@ export default function FocusPage() {
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
   const { user } = useAuth();
+  const { vibe, setVibe, availableVibes } = useThemeAccent();
 
   useEffect(() => {
     const unsub = timerStore.subscribe(async (s) => {
@@ -343,6 +347,33 @@ export default function FocusPage() {
 
         {/* Right: Stats & Session Log */}
         <div className="space-y-6">
+          {/* Quick Vibe Selector */}
+          <div className="p-4 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">Current Vibe</p>
+            <div className="flex flex-wrap gap-2">
+                <TooltipProvider>
+                    {(Object.entries(availableVibes) as [any, any][]).map(([key, info]) => (
+                        <Tooltip key={key}>
+                            <TooltipTrigger asChild>
+                                <button
+                                    onClick={() => setVibe(key)}
+                                    className={`h-8 w-8 rounded-lg border-2 transition-all hover:scale-110 active:scale-95 flex items-center justify-center ${
+                                        vibe === key ? 'border-primary ring-2 ring-primary/20 ring-offset-2 dark:ring-offset-slate-950' : 'border-transparent opacity-60 hover:opacity-100'
+                                    }`}
+                                    style={{ backgroundColor: info.color }}
+                                >
+                                    {vibe === key && <Check className="h-4 w-4 text-white drop-shadow-md" />}
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                                <p className="text-xs font-bold">{info.name}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    ))}
+                </TooltipProvider>
+            </div>
+          </div>
+
           <WellnessTips />
           
           <div className="transition-all duration-700">
