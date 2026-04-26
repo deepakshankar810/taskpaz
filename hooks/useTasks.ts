@@ -161,26 +161,25 @@ export function useTasks(userId: string | undefined | null) {
     const allTasks = useMemo(() => {
         if (!tasks) return [];
 
-        const combined = optimisticTasks.length > 0 ? [...optimisticTasks, ...tasks] : tasks;
+        // 1. Combine all sources and filter out optimistically deleted ones
+        const combined = [...optimisticTasks, ...tasks];
         const visible = combined.filter(t => !optimisticDeletedIds.has(t.id));
         
-        // Use a Map for fast unique filtering and optimistic merging
+        // 2. Map for unique IDs (ensuring optimistic versions take precedence)
         const taskMap = new Map<string, Task>();
         
-        // Process base tasks first
+        // Process visible tasks
         for (const t of visible) {
+            // If there's an optimistic version of a task already in the DB, 
+            // the loop order (optimistic then real) would matter. 
+            // Here, if multiple tasks have same ID, the last one wins.
             taskMap.set(t.id, t);
         }
         
-        // Overwrite with optimistic tasks
-        for (const t of optimisticTasks) {
-            taskMap.set(t.id, t);
-        }
-        
-        // Apply individual property updates
+        // 3. Apply individual property updates
         for (const [id, updates] of Object.entries(optimisticUpdates)) {
             const existing = taskMap.get(id);
-            if (existing) {
+            if (existing && !optimisticDeletedIds.has(id)) {
                 taskMap.set(id, { ...existing, ...updates });
             }
         }
