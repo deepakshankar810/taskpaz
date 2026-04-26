@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import * as timerStore from '@/lib/focusTimerStore';
 import { FocusMusicPlayer } from '@/components/focus/FocusMusicPlayer';
 import { useTasksContext } from '@/components/providers/TasksProvider';
+import { WellnessTips } from '@/components/focus/WellnessTips';
 import { updateTask } from '@/lib/db/tasks';
 import {
   Select,
@@ -312,6 +313,8 @@ export default function FocusPage() {
 
         {/* Right: Stats & Session Log */}
         <div className="space-y-6">
+          <WellnessTips />
+          
           <div className="transition-all duration-700">
             <FocusMusicPlayer />
           </div>
