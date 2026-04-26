@@ -178,8 +178,64 @@ export default function AnalyticsCharts({
 
             <div className="flex flex-col pt-6 border-t">
                 <h2 className="text-xl font-bold">Financial Insights</h2>
-                <p className="text-sm text-slate-500">Breakdown and projections for your finances</p>
+                <p className="text-sm text-slate-500">Historical trends and breakdown of your finances</p>
             </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Cash Flow Trend (Last 6 Months)</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[350px] w-full mt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={financialTrendData}>
+                            <defs>
+                                <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                </linearGradient>
+                                <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1}/>
+                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis 
+                                dataKey="name" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{fill: '#64748b', fontSize: 12}}
+                            />
+                            <YAxis 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{fill: '#64748b', fontSize: 12}}
+                                tickFormatter={(val) => `${currency}${val}`}
+                            />
+                            <Tooltip 
+                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                formatter={(value: any) => formatCurrency(Number(value))}
+                            />
+                            <Legend verticalAlign="top" align="right" iconType="circle" height={36} />
+                            <Area 
+                                type="monotone" 
+                                dataKey="income" 
+                                stroke="#10b981" 
+                                strokeWidth={3}
+                                fillOpacity={1} 
+                                fill="url(#colorIncome)" 
+                            />
+                            <Area 
+                                type="monotone" 
+                                dataKey="expense" 
+                                stroke="#ef4444" 
+                                strokeWidth={3}
+                                fillOpacity={1} 
+                                fill="url(#colorExpense)" 
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
 
             <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
                 <Card className="lg:col-span-2">
