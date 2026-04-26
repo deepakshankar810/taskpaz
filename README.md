@@ -47,4 +47,4 @@
 
 ## 📄 License
 
-MIT — Created with ❤️ for high-performers.
+GNU General Public License v3.0 — Created with ❤️ for high-performers.
