@@ -11,6 +11,8 @@ import { FocusMusicPlayer } from '@/components/focus/FocusMusicPlayer';
 import { useTasksContext } from '@/components/providers/TasksProvider';
 import { WellnessTips } from '@/components/focus/WellnessTips';
 import { updateTask } from '@/lib/db/tasks';
+import { saveFocusSession, getFocusSessions, FocusSession } from '@/lib/db/focus';
+import { useAuth } from '@/components/providers/AuthProvider';
 import {
   Select,
   SelectContent,
@@ -33,6 +35,7 @@ const PRESETS = [
 const SESSION_LOG_KEY = 'focus_session_log';
 
 interface SessionEntry {
+  id?: string;
   label: string;
   minutes: number;
   completedAt: string;
@@ -61,39 +64,66 @@ export default function FocusPage() {
   const activeTasks = tasks.filter(t => t.status !== 'completed');
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
+  const { user } = useAuth();
+
   useEffect(() => {
-    const unsub = timerStore.subscribe((s) => {
+    const unsub = timerStore.subscribe(async (s) => {
       setTimerState(s);
       if (s.timeLeft === 0 && !s.isRunning && s.totalSeconds > 0) {
+        const minutes = Math.round(s.totalSeconds / 60);
+        
+        // 1. Update UI immediately (Optimistic)
         const entry: SessionEntry = {
           label: s.label,
-          minutes: Math.round(s.totalSeconds / 60),
+          minutes,
           completedAt: new Date().toISOString(),
         };
-        setSessionLog(prev => {
-          const updated = [entry, ...prev].slice(0, 20);
-          localStorage.setItem(SESSION_LOG_KEY, JSON.stringify(updated));
-          return updated;
-        });
+        setSessionLog(prev => [entry, ...prev].slice(0, 20));
 
-        // Sync to database if a task is selected
-        if (selectedTaskId && selectedTaskId !== 'none') {
-            const task = tasks.find(t => t.id === selectedTaskId);
-            if (task) {
-                const newTimeSpent = (task.timeSpent || 0) + s.totalSeconds;
-                updateTask(task.id, { timeSpent: newTimeSpent }).catch(err => {
-                    console.error('Failed to update task focus time:', err);
-                });
+        // 2. Sync to database
+        if (user) {
+          try {
+            await saveFocusSession({
+              user_id: user.id,
+              task_id: selectedTaskId,
+              label: s.label,
+              duration_minutes: minutes,
+            });
+
+            // Update specific task if linked
+            if (selectedTaskId && selectedTaskId !== 'none') {
+                const task = tasks.find(t => t.id === selectedTaskId);
+                if (task) {
+                    const newTimeSpent = (task.timeSpent || 0) + s.totalSeconds;
+                    await updateTask(task.id, { timeSpent: newTimeSpent });
+                }
             }
+          } catch (err) {
+            console.error('Failed to sync focus session:', err);
+          }
         }
       }
     });
 
-    const saved = localStorage.getItem(SESSION_LOG_KEY);
-    if (saved) setSessionLog(JSON.parse(saved));
+    const loadSessions = async () => {
+        if (user) {
+            const dbSessions = await getFocusSessions(user.id);
+            setSessionLog(dbSessions.map(s => ({
+                id: s.id,
+                label: s.label,
+                minutes: s.duration_minutes,
+                completedAt: s.completed_at
+            })));
+        } else {
+            const saved = localStorage.getItem(SESSION_LOG_KEY);
+            if (saved) setSessionLog(JSON.parse(saved));
+        }
+    };
+
+    loadSessions();
 
     return () => { unsub(); };
-  }, []);
+  }, [user, tasks, selectedTaskId]);
 
   const applyPreset = (preset: typeof PRESETS[0]) => {
     timerStore.setTimer(preset.minutes * 60, preset.label, 'custom');

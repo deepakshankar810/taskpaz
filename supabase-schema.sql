@@ -200,3 +200,24 @@ end $$;
 alter publication supabase_realtime add table transactions;
 alter publication supabase_realtime add table subscriptions;
 alter publication supabase_realtime add table savings_goals;
+
+-- Focus Sessions Table
+create table if not exists focus_sessions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  task_id uuid references tasks(id) on delete set null,
+  label text not null,
+  duration_minutes integer not null,
+  completed_at timestamptz default now()
+);
+
+alter table focus_sessions enable row level security;
+
+do $$
+begin
+    if not exists (select 1 from pg_policies where policyname = 'Users can manage own focus sessions') then
+        create policy "Users can manage own focus sessions" on focus_sessions for all using (auth.uid() = user_id);
+    end if;
+end $$;
+
+alter publication supabase_realtime add table focus_sessions;
