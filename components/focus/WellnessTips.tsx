@@ -68,7 +68,7 @@ export function WellnessTips() {
 
   useEffect(() => {
     if (isPaused) return;
-    const timer = setInterval(next, 2500); // Shuffle every 2.5 seconds
+    const timer = setInterval(next, 4500); // Shuffle every 4.5 seconds
     return () => clearInterval(timer);
   }, [next, isPaused]);
 
