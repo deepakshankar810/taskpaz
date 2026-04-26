@@ -63,8 +63,8 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
       time_spent: 0,
       tags: cleanTags,
       estimated_minutes: input.estimatedMinutes || null,
-      dependencies: cleanDependencies,
-      shared_with: input.sharedWith || [],
+      // dependencies: cleanDependencies, // Removed until migration is run
+      // shared_with: input.sharedWith || [], // Removed until migration is run
     };
 
     console.log('[createTask] Sanitized payload:', newTaskData);
@@ -167,10 +167,10 @@ export const updateTask = async (taskId: string, updates: UpdateTaskInput): Prom
       updateData.tags = (updates.tags || []).filter(tag => typeof tag === 'string' && tag.trim() !== '');
     }
     if (updates.estimatedMinutes !== undefined) updateData.estimated_minutes = updates.estimatedMinutes;
-    if (updates.dependencies !== undefined) {
-      updateData.dependencies = (updates.dependencies || []).filter(id => typeof id === 'string' && id.trim().length === 36);
-    }
-    if (updates.sharedWith !== undefined) updateData.shared_with = updates.sharedWith;
+    // if (updates.dependencies !== undefined) {
+    //   updateData.dependencies = (updates.dependencies || []).filter(id => typeof id === 'string' && id.trim().length === 36);
+    // }
+    // if (updates.sharedWith !== undefined) updateData.shared_with = updates.sharedWith;
 
     const { error } = await supabase
       .from(TASKS_TABLE)
