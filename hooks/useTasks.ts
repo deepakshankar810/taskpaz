@@ -116,7 +116,7 @@ export function useTasks(userId: string | undefined | null) {
                             updatedAt: new Date(payload.new.updated_at),
                         } : t));
                     } else if (payload.eventType === 'DELETE') {
-                        setTasks(prev => prev.filter(t => t.id === payload.old.id));
+                        setTasks(prev => prev.filter(t => t.id !== payload.old.id));
                     }
                 }
             )
@@ -128,15 +128,24 @@ export function useTasks(userId: string | undefined | null) {
     }, [userId]);
 
     // Optimistic state
-    const [optimisticTasks, setOptimisticTasks] = useState<Task[]>([]);
-    const [optimisticUpdates, setOptimisticUpdates] = useState<Record<string, Partial<Task>>>({});
+    const [optimisticDeletedIds, setOptimisticDeletedIds] = useState<Set<string>>(new Set());
 
     const addOptimisticTask = (task: Task) => {
         setOptimisticTasks(prev => [task, ...prev]);
+        setOptimisticDeletedIds(prev => {
+            const next = new Set(prev);
+            next.delete(task.id);
+            return next;
+        });
     };
 
     const removeOptimisticTask = (taskId: string) => {
         setOptimisticTasks(prev => prev.filter(t => t.id !== taskId));
+        setOptimisticDeletedIds(prev => {
+            const next = new Set(prev);
+            next.add(taskId);
+            return next;
+        });
     };
 
     const optimisticUpdateTask = (taskId: string, updates: Partial<Task>) => {
@@ -151,12 +160,13 @@ export function useTasks(userId: string | undefined | null) {
         if (!tasks) return [];
 
         const combined = optimisticTasks.length > 0 ? [...optimisticTasks, ...tasks] : tasks;
+        const visible = combined.filter(t => !optimisticDeletedIds.has(t.id));
         
         // Use a Map for fast unique filtering and optimistic merging
         const taskMap = new Map<string, Task>();
         
         // Process base tasks first
-        for (const t of tasks) {
+        for (const t of visible) {
             taskMap.set(t.id, t);
         }
         
