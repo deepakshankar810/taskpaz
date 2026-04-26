@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { ThemeAccentProvider } from "@/components/providers/ThemeAccentProvider";
 
 export default function RootLayout({
   children,
@@ -37,10 +38,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-          <Toaster position="top-right" expand={false} richColors />
+          <ThemeAccentProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+            <Toaster position="top-right" expand={false} richColors />
+          </ThemeAccentProvider>
         </ThemeProvider>
       </body>
     </html>

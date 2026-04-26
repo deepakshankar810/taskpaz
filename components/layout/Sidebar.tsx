@@ -18,7 +18,10 @@ import {
   Wallet,
   Focus,
   BookOpen,
+  Palette,
 } from 'lucide-react';
+import { useThemeAccent } from '@/components/providers/ThemeAccentProvider';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -41,6 +44,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
   const router = useRouter();
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const { vibe, setVibe, availableVibes } = useThemeAccent();
 
   useEffect(() => {
     setMounted(true);
@@ -66,7 +70,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
             height={32}
             className="h-8 w-8 object-contain"
           />
-          <span className="text-xl font-bold text-blue-600 italic tracking-tighter">Taskpaz</span>
+          <span className="text-xl font-bold text-primary italic tracking-tighter">Taskpaz</span>
         </Link>
       </div>
 
@@ -84,7 +88,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
             >
               <span
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${isActive
-                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                  ? 'bg-primary/10 text-primary glow-primary'
                   : 'text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
                   }`}
               >
@@ -97,9 +101,34 @@ export function Sidebar({ onItemClick }: SidebarProps) {
       </nav>
 
       <div className="border-t p-4">
+        {/* Accent Selector */}
+        <div className="mb-6">
+          <p className="mb-3 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Choose your vibe</p>
+          <div className="flex flex-wrap gap-2 px-2">
+            <TooltipProvider>
+              {(Object.entries(availableVibes) as [any, any][]).map(([key, info]) => (
+                <Tooltip key={key}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setVibe(key)}
+                      className={`h-6 w-6 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${
+                        vibe === key ? 'border-white ring-2 ring-primary ring-offset-2 dark:ring-offset-slate-950' : 'border-transparent opacity-60 hover:opacity-100'
+                      }`}
+                      style={{ backgroundColor: info.color }}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p className="text-xs">{info.name}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </TooltipProvider>
+          </div>
+        </div>
+
         <div className="flex items-center gap-3 mb-4">
           {/* Fallback avatar simply using first letter */}
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold dark:bg-blue-900 dark:text-blue-300">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
             {mounted ? (user?.user_metadata?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U') : 'U'}
           </div>
           <div className="overflow-hidden">
