@@ -43,6 +43,19 @@ function TasksContent() {
   const searchQuery = searchParams?.get('q')?.toLowerCase() || '';
 
   const filteredTasks = tasks.filter(task => {
+    // Hidden until 2 days before if weekly recurring (except in calendar view)
+    if (activeTab !== 'calendar' && task.status === 'pending' && task.recurringPattern === 'weekly' && task.dueDate) {
+      const dueDate = new Date(task.dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const twoDaysBefore = new Date(dueDate);
+      twoDaysBefore.setDate(twoDaysBefore.getDate() - 2);
+      twoDaysBefore.setHours(0, 0, 0, 0);
+
+      if (today < twoDaysBefore) return false;
+    }
+
     if (!searchQuery) return true;
     return (
       task.title?.toLowerCase().includes(searchQuery) ||

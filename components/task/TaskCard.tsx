@@ -3,7 +3,7 @@
 import { Task } from '@/lib/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, Tag, Trash2, CheckCircle, Pencil, ListTodo, Timer, RepeatIcon, Link as LinkIcon, AlertTriangle, Users } from 'lucide-react';
+import { Clock, Tag, Trash2, CheckCircle, Pencil, RepeatIcon } from 'lucide-react';
 import { PriorityBadge } from './PriorityBadge';
 import { CategoryBadge } from './CategoryBadge';
 import { Badge } from '@/components/ui/badge';
@@ -77,20 +77,6 @@ export function TaskCard({ task, onComplete, onDelete, onEdit }: TaskCardProps) 
               {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
             </div>
           )}
-          
-          {task.subtasks && task.subtasks.length > 0 && (
-            <div className="flex items-center text-[11px] font-medium text-slate-500 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded border border-slate-100 dark:border-slate-800" title="Subtasks">
-              <ListTodo className="w-3 h-3 mr-1.5 text-green-500" />
-              {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
-            </div>
-          )}
-
-          {(task.estimatedMinutes || (task.timeSpent && task.timeSpent > 0)) && (
-            <div className="flex items-center text-[11px] font-medium text-slate-500 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded border border-slate-100 dark:border-slate-800" title="Time (Estimated / Spent)">
-              <Timer className="w-3 h-3 mr-1.5 text-orange-500" />
-              {task.timeSpent ? Math.floor(task.timeSpent / 60) : 0} / {task.estimatedMinutes || '—'}m
-            </div>
-          )}
 
           {task.recurringPattern && task.recurringPattern !== 'none' && (
             <div className="flex items-center text-[11px] font-medium text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded border border-purple-100 dark:border-purple-900/30" title={`Recurring: ${task.recurringPattern}`}>
@@ -98,8 +84,6 @@ export function TaskCard({ task, onComplete, onDelete, onEdit }: TaskCardProps) 
               {task.recurringPattern}
             </div>
           )}
-
-          {/* Dependencies view removed */}
         </div>
       </CardContent>
       <CardFooter className="px-5 py-3 bg-slate-50/50 dark:bg-slate-900/30 flex justify-end">

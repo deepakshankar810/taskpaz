@@ -2,25 +2,21 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { CreateTaskInput, TaskPriority, TaskCategory, Subtask } from '@/lib/types';
+import { CreateTaskInput, TaskPriority, TaskCategory } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
-import { Plus, X, Timer, Tag as TagIcon, Link as LinkIcon } from 'lucide-react';
+import { Plus, X, Tag as TagIcon } from 'lucide-react';
 import { TagInput } from './TagInput';
-import { DependencySelector } from './DependencySelector';
 
 // Internal form state can have strings for dates (HTML input requirement)
 interface TaskFormValues extends Omit<CreateTaskInput, 'dueDate'> {
   dueDate?: string;
   dueTime?: string;
-  subtasks: Subtask[];
   tags: string[];
-  dependencies: string[];
-  estimatedMinutes?: number;
 }
 
 interface TaskFormProps {
@@ -28,15 +24,13 @@ interface TaskFormProps {
   isLoading?: boolean;
   defaultValues?: Partial<TaskFormValues>;
   submitLabel?: string;
-  taskId?: string; // Needed for dependency exclusion
+  taskId?: string; // Needed for excluding current task
 }
 
 export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel, taskId }: TaskFormProps) {
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<TaskFormValues>({
     defaultValues: {
-      subtasks: [],
       tags: [],
-      dependencies: [],
       priority: 'medium',
       category: 'personal',
       ...defaultValues
@@ -45,28 +39,7 @@ export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel, task
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const descriptionValue = watch('description');
-  const titleValue = watch('title');
-  const subtasks = watch('subtasks') || [];
   const tags = watch('tags') || [];
-  const dependencies = watch('dependencies') || [];
-
-
-
-  const addSubtask = () => {
-    setValue('subtasks', [...subtasks, { id: crypto.randomUUID(), title: '', completed: false }]);
-  };
-
-  const removeSubtask = (index: number) => {
-    const newSubtasks = [...subtasks];
-    newSubtasks.splice(index, 1);
-    setValue('subtasks', newSubtasks);
-  };
-
-  const updateSubtask = (index: number, title: string) => {
-    const newSubtasks = [...subtasks];
-    newSubtasks[index].title = title;
-    setValue('subtasks', newSubtasks);
-  };
 
   const onFormSubmit = async (data: TaskFormValues) => {
     try {
@@ -86,7 +59,6 @@ export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel, task
       const result = onSubmit({
         ...rest,
         dueDate: finalDueDate,
-        estimatedMinutes: data.estimatedMinutes ? Number(data.estimatedMinutes) : undefined
       });
 
       if (result instanceof Promise) {
@@ -169,21 +141,8 @@ export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel, task
           </div>
         </div>
 
-        {/* Time Estimate & Recurring */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold flex items-center gap-2">
-              <Timer className="h-3 w-3 text-slate-400" />
-              Estimate (mins)
-            </Label>
-            <Input 
-              type="number" 
-              {...register('estimatedMinutes')} 
-              placeholder="e.g. 45" 
-              className="bg-white dark:bg-slate-900"
-            />
-          </div>
-
+        {/* Recurring & Dates */}
+        <div className="grid grid-cols-1 gap-4">
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Recurring</Label>
             <Select
@@ -226,46 +185,6 @@ export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel, task
             onChange={(newTags) => setValue('tags', newTags)} 
             placeholder="Work, urgent, home..." 
           />
-        </div>
-
-        {/* Dependencies */}
-        <div className="space-y-2">
-          <Label className="text-sm font-semibold flex items-center gap-2">
-            <LinkIcon className="h-3 w-3 text-slate-400" />
-            Dependencies
-          </Label>
-          <DependencySelector 
-            selectedIds={dependencies} 
-            onChange={(ids) => setValue('dependencies', ids)} 
-            excludeTaskId={taskId}
-          />
-        </div>
-
-        {/* Subtasks */}
-        <div className="space-y-3 pt-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-semibold">Subtasks</Label>
-            <Button type="button" variant="ghost" size="sm" onClick={addSubtask} className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
-              <Plus className="h-4 w-4 mr-1" /> Add Subtask
-            </Button>
-          </div>
-          {subtasks.length > 0 && (
-            <div className="space-y-2">
-              {subtasks.map((st, i) => (
-                <div key={st.id} className="flex gap-2 items-center animate-in slide-in-from-left-2 duration-200">
-                  <Input 
-                    value={st.title} 
-                    onChange={(e) => updateSubtask(i, e.target.value)}
-                    placeholder="Task step..."
-                    className="h-10 bg-white dark:bg-slate-900"
-                  />
-                  <Button type="button" variant="ghost" size="icon" className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => removeSubtask(i)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 

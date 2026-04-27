@@ -62,6 +62,8 @@ export function useTasks(userId: string | undefined | null) {
                     completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
                     createdAt: new Date(task.created_at),
                     updatedAt: new Date(task.updated_at),
+                    recurringPattern: task.recurring_pattern,
+                    timeSpent: task.time_spent,
                 } as Task));
 
                 if (typeof window !== 'undefined') {
@@ -100,6 +102,8 @@ export function useTasks(userId: string | undefined | null) {
                             completedAt: payload.new.completed_at ? new Date(payload.new.completed_at) : undefined,
                             createdAt: new Date(payload.new.created_at),
                             updatedAt: new Date(payload.new.updated_at),
+                            recurringPattern: payload.new.recurring_pattern,
+                            timeSpent: payload.new.time_spent,
                         } as Task;
                         setTasks(prev => [newTask, ...prev]);
                     } else if (payload.eventType === 'UPDATE') {
@@ -114,6 +118,8 @@ export function useTasks(userId: string | undefined | null) {
                             projectId: payload.new.project_id,
                             completedAt: payload.new.completed_at ? new Date(payload.new.completed_at) : undefined,
                             updatedAt: new Date(payload.new.updated_at),
+                            recurringPattern: payload.new.recurring_pattern,
+                            timeSpent: payload.new.time_spent,
                         } : t));
                     } else if (payload.eventType === 'DELETE') {
                         setTasks(prev => prev.filter(t => t.id !== payload.old.id));

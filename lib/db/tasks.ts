@@ -17,12 +17,9 @@ const mapTaskRow = (data: any): Task => ({
   createdAt: new Date(data.created_at),
   updatedAt: new Date(data.updated_at),
   orderIndex: data.order_index,
-  subtasks: data.subtasks || [],
   recurringPattern: data.recurring_pattern,
   timeSpent: data.time_spent,
   tags: data.tags || [],
-  estimatedMinutes: data.estimated_minutes ?? undefined,
-  dependencies: data.dependencies || [],
   sharedWith: data.shared_with || [],
 });
 
@@ -41,8 +38,6 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
 
     // Sanitize arrays and UUIDs to prevent 400 errors
     const cleanTags = (input.tags || []).filter(tag => typeof tag === 'string' && tag.trim() !== '');
-    const cleanDependencies = (input.dependencies || []).filter(id => typeof id === 'string' && id.trim().length === 36);
-    const cleanSubtasks = (input.subtasks || []).filter(st => st.title && st.title.trim() !== '');
     
     // Ensure projectId is either a valid UUID or null (never an empty string)
     const cleanProjectId = (input.projectId && input.projectId.trim().length === 36) ? input.projectId : null;
@@ -58,12 +53,9 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
       due_date: formattedDueDate,
       project_id: cleanProjectId,
       order_index: input.orderIndex || 0,
-      subtasks: cleanSubtasks,
       recurring_pattern: input.recurringPattern || 'none',
       time_spent: 0,
       tags: cleanTags,
-      estimated_minutes: input.estimatedMinutes || null,
-      // dependencies: cleanDependencies, // Removed until migration is run
       // shared_with: input.sharedWith || [], // Removed until migration is run
     };
 
@@ -158,18 +150,11 @@ export const updateTask = async (taskId: string, updates: UpdateTaskInput): Prom
     }
 
     if (updates.orderIndex !== undefined) updateData.order_index = updates.orderIndex;
-    if (updates.subtasks !== undefined) {
-      updateData.subtasks = (updates.subtasks || []).filter(st => st.title && st.title.trim() !== '');
-    }
     if (updates.recurringPattern !== undefined) updateData.recurring_pattern = updates.recurringPattern;
     if (updates.timeSpent !== undefined) updateData.time_spent = updates.timeSpent;
     if (updates.tags !== undefined) {
       updateData.tags = (updates.tags || []).filter(tag => typeof tag === 'string' && tag.trim() !== '');
     }
-    if (updates.estimatedMinutes !== undefined) updateData.estimated_minutes = updates.estimatedMinutes;
-    // if (updates.dependencies !== undefined) {
-    //   updateData.dependencies = (updates.dependencies || []).filter(id => typeof id === 'string' && id.trim().length === 36);
-    // }
     // if (updates.sharedWith !== undefined) updateData.shared_with = updates.sharedWith;
 
     const { error } = await supabase
@@ -222,10 +207,7 @@ export const completeTask = async (taskId: string): Promise<void> => {
         dueDate: nextDueDate,
         projectId: task.project_id,
         tags: task.tags,
-        subtasks: (task.subtasks || []).map((s: any) => ({ ...s, completed: false })), // Reset subtasks
         recurringPattern: task.recurring_pattern,
-        estimatedMinutes: task.estimated_minutes,
-        dependencies: task.dependencies,
         sharedWith: task.shared_with,
       });
     }

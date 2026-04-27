@@ -14,7 +14,6 @@
 ### ✅ Advanced Task Ecosystem
 *   **Multi-View Layouts**: Switch seamlessly between List, Kanban Board, and interactive Calendar views.
 *   **Recurring Engine**: Automated task generation for daily, weekly, or monthly habits.
-*   **Smart Subtasks**: Break down complex objectives with nested progress tracking.
 *   **Optimistic UI**: Zero-latency interactions—tasks update instantly in the UI while syncing in the background.
 *   **Real-time Sync**: Collaborative-ready architecture with instant updates across all devices.
 
