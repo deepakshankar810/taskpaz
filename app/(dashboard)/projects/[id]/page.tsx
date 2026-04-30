@@ -111,41 +111,41 @@ export default function ProjectPage({ params }: { params: any }) {
 
     return (
         <div className="flex flex-col min-h-full">
-            <div className="sticky top-0 z-20 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md py-4 border-b border-slate-200/50 dark:border-slate-800/50 px-6 md:px-10 lg:px-14">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/projects">
-                            <Button variant="ghost" size="icon">
-                                <ChevronLeft className="h-5 w-5" />
+            <div className="sticky top-0 z-20 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md py-4 border-b border-slate-200/50 dark:border-slate-800/50 px-4 sm:px-6 md:px-10 lg:px-14">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                        <Link href="/projects" className="shrink-0">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10">
+                                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                             </Button>
                         </Link>
                         <div
-                            className="h-4 w-4 rounded-full"
+                            className="h-3 w-3 sm:h-4 sm:w-4 rounded-full shrink-0"
                             style={{ backgroundColor: project.color }}
                         />
                         {isEditing ? (
                             <Input
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="text-xl font-bold h-9 w-64 border-indigo-200 focus:border-indigo-500"
+                                className="text-lg sm:text-xl font-bold h-9 w-full sm:w-64 border-indigo-200 focus:border-indigo-500"
                                 placeholder="Project Name"
                             />
                         ) : (
-                            <h1 className="text-2xl font-bold">{project.name}</h1>
+                            <h1 className="text-xl sm:text-2xl font-bold truncate">{project.name}</h1>
                         )}
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <div className="text-xs text-slate-400 mr-2 italic">
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                        <div className="text-xs text-slate-400 sm:mr-2 italic">
                             {hasUnsavedChanges ? 'Typing...' : 'Saved'}
                         </div>
                         {isEditing ? (
-                            <Button onClick={handleFinishEditing} className="bg-indigo-600 hover:bg-indigo-700">
-                                <X className="mr-2 h-4 w-4" /> Stop Editing
+                            <Button onClick={handleFinishEditing} className="bg-indigo-600 hover:bg-indigo-700 h-8 sm:h-10 text-xs sm:text-sm">
+                                <X className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Stop
                             </Button>
                         ) : (
-                            <Button variant="outline" onClick={() => setIsEditing(true)}>
-                                <Pencil className="mr-2 h-4 w-4" /> Edit Content
+                            <Button variant="outline" onClick={() => setIsEditing(true)} className="h-8 sm:h-10 text-xs sm:text-sm">
+                                <Pencil className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Edit Content
                             </Button>
                         )}
                     </div>

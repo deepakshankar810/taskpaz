@@ -38,6 +38,7 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/supabase-js": "^2.95.2",
+    "@tailwindcss/typography": "^0.5.19",
     "@tiptap/extension-code-block-lowlight": "^3.18.0",
     "@tiptap/extension-color": "^3.18.0",
     "@tiptap/extension-highlight": "^3.18.0",

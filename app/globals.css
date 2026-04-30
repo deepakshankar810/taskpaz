@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@plugin "@tailwindcss/typography";
 
 @layer base {
   :root {
@@ -150,3 +151,31 @@
 .animate-music-bar-1 { animation: music-bar 0.6s infinite ease-in-out; }
 .animate-music-bar-2 { animation: music-bar 0.8s infinite ease-in-out; }
 .animate-music-bar-3 { animation: music-bar 0.7s infinite ease-in-out; }
+
+/* Tiptap Task List Styles */
+ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+
+ul[data-type="taskList"] p {
+  margin: 0;
+}
+
+ul[data-type="taskList"] li {
+  display: flex;
+}
+
+ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-right: 0.5rem;
+  user-select: none;
+}
+
+ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+ul[data-type="taskList"] input[type="checkbox"] {
+  cursor: pointer;
+}

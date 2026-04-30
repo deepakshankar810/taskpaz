@@ -83,10 +83,28 @@ const MenuBar = ({ editor }: { editor: any }) => {
 export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      TaskList,
+      StarterKit.configure({
+        bulletList: {
+          HTMLAttributes: {
+            class: 'list-disc pl-5 space-y-1 marker:text-slate-500',
+          },
+        },
+        orderedList: {
+          HTMLAttributes: {
+            class: 'list-decimal pl-5 space-y-1 marker:text-slate-500',
+          },
+        },
+      }),
+      TaskList.configure({
+        HTMLAttributes: {
+          class: 'not-prose pl-2 space-y-1',
+        },
+      }),
       TaskItem.configure({
         nested: true,
+        HTMLAttributes: {
+          class: 'flex items-start gap-2 my-1',
+        },
       }),
     ],
     content: value || '',

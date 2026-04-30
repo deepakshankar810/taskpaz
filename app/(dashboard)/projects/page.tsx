@@ -88,15 +88,15 @@ export default function ProjectsPage() {
 
   return (
     <div className="space-y-10 p-6 md:p-10 lg:p-14">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Projects</h1>
         <Dialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" /> New Project
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[425px] w-[95vw]">
             <DialogHeader>
               <DialogTitle>Create New Project</DialogTitle>
             </DialogHeader>
