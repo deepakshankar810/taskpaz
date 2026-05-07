@@ -6,6 +6,7 @@ import { useFinanceContext } from '@/components/providers/FinanceProvider';
 import { format, addMonths, subMonths, isSameMonth, isWithinInterval } from 'date-fns';
 import { addTransaction, deleteTransaction, updateSalaryDay } from '@/lib/db/finance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,8 +18,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Wallet, TrendingUp, TrendingDown, Plus, Trash2, ArrowUpRight, ArrowDownRight, Loader2, Download } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Wallet, TrendingUp, TrendingDown, Plus, Trash2, ArrowUpRight, ArrowDownRight, Loader2, Download, Settings, Calendar, CreditCard } from 'lucide-react';
 import { CreateTransactionInput, TransactionType } from '@/lib/types';
 import { toast } from 'sonner';
 import { toDate, getBudgetPeriod } from '@/lib/utils';
@@ -206,9 +211,15 @@ export default function FinancePage() {
     <div className="space-y-12 p-6 md:p-10 lg:p-14">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Finance Tracker</h1>
-          <p className="text-slate-500 text-sm">
-            Period: {format(periodStart, 'MMM d')} - {format(periodEnd, 'MMM d, yyyy')}
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">Finance Tracker</h1>
+            <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800">
+              Day {salaryDay} Cycle
+            </Badge>
+          </div>
+          <p className="text-slate-500 text-sm flex items-center gap-1.5 mt-1">
+            <Calendar className="h-3.5 w-3.5" />
+            {format(periodStart, 'MMM d')} - {format(periodEnd, 'MMM d, yyyy')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -223,42 +234,73 @@ export default function FinancePage() {
               &gt;
             </Button>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport} className="h-9 mr-2">
+          <Button variant="outline" size="sm" onClick={handleExport} className="h-9">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
-          <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border rounded-md px-3 py-1 mr-2">
-            <span className="text-xs text-slate-500 font-medium whitespace-nowrap">Salary Day:</span>
-            <Input
-              type="number"
-              min={1}
-              max={31}
-              className="h-6 w-12 text-center p-0 border-none focus-visible:ring-0"
-              value={salaryDay}
-              onChange={async (e) => {
-                const val = parseInt(e.target.value);
-                if (val >= 1 && val <= 31) {
-                  setSalaryDay(val);
-                  if (user) {
-                    try {
-                      await updateSalaryDay(user.id, val);
-                    } catch (err: any) {
-                      toast.error(`Failed to update salary day: ${err.message || 'Unknown error'}`);
-                    }
-                  }
-                }
-              }}
-            />
-          </div>
-          <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border rounded-md px-3 py-1 mr-2">
-            <span className="text-xs text-slate-500 font-medium">Currency:</span>
-            <Input
-              className="h-6 w-16 text-center p-0 border-none focus-visible:ring-0"
-              value={currency}
-              onChange={handleCurrencyChange}
-              maxLength={5}
-            />
-          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium leading-none">Finance Settings</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Customize your tracker preferences.
+                  </p>
+                </div>
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="salary-day">Salary Day</Label>
+                    <Select 
+                      value={salaryDay.toString()} 
+                      onValueChange={async (v) => {
+                        const val = parseInt(v);
+                        setSalaryDay(val);
+                        if (user) {
+                          try {
+                            await updateSalaryDay(user.id, val);
+                            toast.success("Salary day updated");
+                          } catch (err: any) {
+                            toast.error(`Failed to update: ${err.message}`);
+                          }
+                        }
+                      }}
+                    >
+                      <SelectTrigger id="salary-day">
+                        <SelectValue placeholder="Select day" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <ScrollArea className="h-[200px]">
+                          {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                            <SelectItem key={day} value={day.toString()}>
+                              Day {day}
+                            </SelectItem>
+                          ))}
+                        </ScrollArea>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="currency">Currency Symbol</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="currency"
+                        value={currency}
+                        onChange={handleCurrencyChange}
+                        maxLength={5}
+                        placeholder="$"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
               <Button>
