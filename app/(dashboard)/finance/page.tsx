@@ -262,6 +262,9 @@ export default function FinancePage() {
                       onValueChange={async (v) => {
                         const val = parseInt(v);
                         setSalaryDay(val);
+                        if (typeof window !== 'undefined' && user) {
+                          localStorage.setItem(`finance_salary_day_${user.id}`, val.toString());
+                        }
                         if (user) {
                           try {
                             await updateSalaryDay(user.id, val);

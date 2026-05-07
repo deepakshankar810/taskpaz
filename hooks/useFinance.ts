@@ -28,7 +28,13 @@ export function useFinance(userId: string | undefined | null) {
 
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
-    const [salaryDay, setSalaryDay] = useState<number>(1);
+    const [salaryDay, setSalaryDay] = useState<number>(() => {
+        if (typeof window !== 'undefined' && userId) {
+            const cached = localStorage.getItem(`finance_salary_day_${userId}`);
+            return cached ? parseInt(cached) : 1;
+        }
+        return 1;
+    });
     const [loading, setLoading] = useState(!transactions.length);
     const [error, setError] = useState<Error | null>(null);
 
@@ -70,7 +76,11 @@ export function useFinance(userId: string | undefined | null) {
                 if (goalRes.error) throw goalRes.error;
                 
                 if (userRes.data) {
-                    setSalaryDay(userRes.data.salary_day || 1);
+                    const day = userRes.data.salary_day || 1;
+                    setSalaryDay(day);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem(`finance_salary_day_${userId}`, day.toString());
+                    }
                 }
 
                 const mappedTrans = transRes.data.map(docToTransaction);
@@ -147,7 +157,11 @@ export function useFinance(userId: string | undefined | null) {
             .channel(`finance_user_${userId}`)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` }, (payload) => {
                 if (payload.new.salary_day !== undefined) {
-                    setSalaryDay(payload.new.salary_day);
+                    const day = payload.new.salary_day;
+                    setSalaryDay(day);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem(`finance_salary_day_${userId}`, day.toString());
+                    }
                 }
             })
             .subscribe();
