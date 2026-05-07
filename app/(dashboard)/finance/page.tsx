@@ -242,8 +242,8 @@ export default function FinancePage() {
                   if (user) {
                     try {
                       await updateSalaryDay(user.id, val);
-                    } catch (err) {
-                      toast.error("Failed to update salary day");
+                    } catch (err: any) {
+                      toast.error(`Failed to update salary day: ${err.message || 'Unknown error'}`);
                     }
                   }
                 }
