@@ -45,6 +45,14 @@ export function useFinance(userId: string | undefined | null) {
             return;
         }
 
+        // Load from cache when userId becomes available
+        if (typeof window !== 'undefined') {
+            const cached = localStorage.getItem(`finance_salary_day_${userId}`);
+            if (cached) {
+                setSalaryDay(parseInt(cached));
+            }
+        }
+
         const fetchFinanceData = async () => {
             try {
                 // Parallel fetch for speed
