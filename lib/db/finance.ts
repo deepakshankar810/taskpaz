@@ -209,3 +209,11 @@ export const docToSavingsGoal = (item: any): SavingsGoal => {
         updatedAt: new Date(item.updated_at),
     } as unknown as SavingsGoal;
 };
+export const updateSalaryDay = async (userId: string, day: number) => {
+    const { error } = await supabase
+        .from('users')
+        .update({ salary_day: day })
+        .eq('id', userId);
+
+    if (error) throw error;
+};

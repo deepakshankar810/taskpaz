@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { isSameMonth } from 'date-fns';
+import { isSameMonth, isWithinInterval } from 'date-fns';
 import { Transaction, Subscription, SavingsGoal } from '@/lib/types';
 import { docToTransaction, docToSubscription, docToSavingsGoal, refreshSubscriptionDate } from '@/lib/db/finance';
-import { toDate } from '@/lib/utils';
+import { toDate, getBudgetPeriod } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function useFinance(userId: string | undefined | null) {
@@ -28,6 +28,7 @@ export function useFinance(userId: string | undefined | null) {
 
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
+    const [salaryDay, setSalaryDay] = useState<number>(1);
     const [loading, setLoading] = useState(!transactions.length);
     const [error, setError] = useState<Error | null>(null);
 
@@ -41,7 +42,7 @@ export function useFinance(userId: string | undefined | null) {
         const fetchFinanceData = async () => {
             try {
                 // Parallel fetch for speed
-                const [transRes, subRes, goalRes] = await Promise.all([
+                const [transRes, subRes, goalRes, userRes] = await Promise.all([
                     supabase
                         .from('transactions')
                         .select('*')
@@ -56,12 +57,21 @@ export function useFinance(userId: string | undefined | null) {
                         .from('savings_goals')
                         .select('*')
                         .eq('user_id', userId)
-                        .order('created_at', { ascending: false })
+                        .order('created_at', { ascending: false }),
+                    supabase
+                        .from('users')
+                        .select('salary_day')
+                        .eq('id', userId)
+                        .single()
                 ]);
 
                 if (transRes.error) throw transRes.error;
                 if (subRes.error) throw subRes.error;
                 if (goalRes.error) throw goalRes.error;
+                
+                if (userRes.data) {
+                    setSalaryDay(userRes.data.salary_day || 1);
+                }
 
                 const mappedTrans = transRes.data.map(docToTransaction);
                 setTransactions(mappedTrans);
@@ -132,20 +142,33 @@ export function useFinance(userId: string | undefined | null) {
             })
             .subscribe();
 
+        // User profile updates (for salary_day)
+        const userChannel = supabase
+            .channel(`finance_user_${userId}`)
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` }, (payload) => {
+                if (payload.new.salary_day !== undefined) {
+                    setSalaryDay(payload.new.salary_day);
+                }
+            })
+            .subscribe();
+
         return () => {
             supabase.removeChannel(transChannel);
             supabase.removeChannel(subChannel);
             supabase.removeChannel(goalChannel);
+            supabase.removeChannel(userChannel);
         };
     }, [userId]);
 
     const stats = useMemo(() => {
         const now = new Date();
+        const { start, end } = getBudgetPeriod(now, salaryDay);
+
         return transactions.reduce(
             (acc, curr) => {
                 const amount = Number(curr.amount);
                 const d = toDate(curr.date);
-                const isCurrentMonth = d && isSameMonth(d, now);
+                const isCurrentMonth = d && isWithinInterval(d, { start, end });
 
                 if (curr.type === 'income') {
                     acc.income += amount;
@@ -166,17 +189,19 @@ export function useFinance(userId: string | undefined | null) {
             },
             { income: 0, expenses: 0, balance: 0, monthlyIncome: 0, monthlyExpenses: 0, monthlyBalance: 0 }
         );
-    }, [transactions]);
+    }, [transactions, salaryDay]);
 
     return {
         transactions,
         subscriptions,
         savingsGoals,
+        salaryDay,
         stats,
         loading,
         error,
         setTransactions,
         setSubscriptions,
-        setSavingsGoals
+        setSavingsGoals,
+        setSalaryDay
     };
 }

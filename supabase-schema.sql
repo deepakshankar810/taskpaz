@@ -5,7 +5,8 @@ create table if not exists users (
   email text,
   avatar text,
   created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  updated_at timestamptz default now(),
+  salary_day integer default 1
 );
 
 -- Tasks Table

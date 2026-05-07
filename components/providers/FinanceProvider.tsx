@@ -9,6 +9,7 @@ interface FinanceContextType {
     transactions: Transaction[];
     subscriptions: Subscription[];
     savingsGoals: SavingsGoal[];
+    salaryDay: number;
     stats: {
         income: number;
         expenses: number;
@@ -22,6 +23,7 @@ interface FinanceContextType {
     setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
     setSubscriptions: React.Dispatch<React.SetStateAction<Subscription[]>>;
     setSavingsGoals: React.Dispatch<React.SetStateAction<SavingsGoal[]>>;
+    setSalaryDay: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);

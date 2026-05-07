@@ -5,6 +5,7 @@ export interface User {
   avatar?: string;
   createdAt: Date;
   updatedAt: Date;
+  salaryDay?: number;
   preferences?: UserPreferences;
 }
 

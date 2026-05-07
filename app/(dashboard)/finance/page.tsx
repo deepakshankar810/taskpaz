@@ -3,8 +3,8 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useFinanceContext } from '@/components/providers/FinanceProvider';
-import { format, addMonths, subMonths, isSameMonth } from 'date-fns';
-import { addTransaction, deleteTransaction } from '@/lib/db/finance';
+import { format, addMonths, subMonths, isSameMonth, isWithinInterval } from 'date-fns';
+import { addTransaction, deleteTransaction, updateSalaryDay } from '@/lib/db/finance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,13 +21,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Wallet, TrendingUp, TrendingDown, Plus, Trash2, ArrowUpRight, ArrowDownRight, Loader2, Download } from 'lucide-react';
 import { CreateTransactionInput, TransactionType } from '@/lib/types';
 import { toast } from 'sonner';
-import { toDate } from '@/lib/utils';
+import { toDate, getBudgetPeriod } from '@/lib/utils';
 import { SubscriptionManager } from '@/components/finance/SubscriptionManager';
 import { SavingsGoals } from '@/components/finance/SavingsGoals';
 
 export default function FinancePage() {
   const { user } = useAuth();
-  const { transactions, subscriptions, savingsGoals, stats, loading, setTransactions } = useFinanceContext();
+  const { transactions, subscriptions, savingsGoals, stats, salaryDay, loading, setTransactions, setSalaryDay } = useFinanceContext();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [currency, setCurrency] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -108,10 +108,12 @@ export default function FinancePage() {
     setCategory('');
   };
 
-  const { monthlyIncome, monthlyExpenses, filteredByPeriod } = useMemo(() => {
+  const { monthlyIncome, monthlyExpenses, filteredByPeriod, periodStart, periodEnd } = useMemo(() => {
+    const { start, end } = getBudgetPeriod(currentPeriod, salaryDay);
+
     const periodTransactions = transactions.filter(t => {
       const d = toDate(t.date);
-      return d && isSameMonth(d, currentPeriod);
+      return d && isWithinInterval(d, { start, end });
     });
 
     const income = periodTransactions
@@ -128,8 +130,8 @@ export default function FinancePage() {
       return matchesSearch && matchesCategory;
     });
 
-    return { monthlyIncome: income, monthlyExpenses: expenses, filteredByPeriod: filtered };
-  }, [transactions, currentPeriod, searchQuery, filterCategory]);
+    return { monthlyIncome: income, monthlyExpenses: expenses, filteredByPeriod: filtered, periodStart: start, periodEnd: end };
+  }, [transactions, currentPeriod, searchQuery, filterCategory, salaryDay]);
 
   const handleDelete = (id: string) => {
     // Save current state for potential rollback
@@ -188,7 +190,7 @@ export default function FinancePage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `transactions_${format(currentPeriod, 'yyyy-MM')}.csv`);
+    link.setAttribute('download', `transactions_${format(periodStart, 'yyyy-MM-dd')}_to_${format(periodEnd, 'yyyy-MM-dd')}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -205,7 +207,9 @@ export default function FinancePage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Finance Tracker</h1>
-          <p className="text-slate-500 text-sm">Managing finances for {format(currentPeriod, 'MMMM yyyy')}</p>
+          <p className="text-slate-500 text-sm">
+            Period: {format(periodStart, 'MMM d')} - {format(periodEnd, 'MMM d, yyyy')}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center bg-white dark:bg-slate-900 border rounded-md p-1 mr-2">
@@ -223,6 +227,29 @@ export default function FinancePage() {
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
+          <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border rounded-md px-3 py-1 mr-2">
+            <span className="text-xs text-slate-500 font-medium whitespace-nowrap">Salary Day:</span>
+            <Input
+              type="number"
+              min={1}
+              max={31}
+              className="h-6 w-12 text-center p-0 border-none focus-visible:ring-0"
+              value={salaryDay}
+              onChange={async (e) => {
+                const val = parseInt(e.target.value);
+                if (val >= 1 && val <= 31) {
+                  setSalaryDay(val);
+                  if (user) {
+                    try {
+                      await updateSalaryDay(user.id, val);
+                    } catch (err) {
+                      toast.error("Failed to update salary day");
+                    }
+                  }
+                }
+              }}
+            />
+          </div>
           <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border rounded-md px-3 py-1 mr-2">
             <span className="text-xs text-slate-500 font-medium">Currency:</span>
             <Input

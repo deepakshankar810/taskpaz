@@ -1,8 +1,32 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { subMonths, addMonths } from 'date-fns';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+export function getBudgetPeriod(date: Date, salaryDay: number = 1) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  
+  let start = new Date(year, month, salaryDay);
+  
+  if (d.getDate() < salaryDay) {
+    start = subMonths(start, 1);
+  }
+  
+  // Set start to beginning of day
+  start.setHours(0, 0, 0, 0);
+  
+  // End is one month after start, minus one day
+  const end = new Date(start);
+  end.setMonth(end.getMonth() + 1);
+  end.setDate(end.getDate() - 1);
+  end.setHours(23, 59, 59, 999);
+  
+  return { start, end };
 }
 
 export function formatDate(date: Date | string | number) {
