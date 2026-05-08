@@ -74,122 +74,134 @@ export function TaskForm({ onSubmit, isLoading, defaultValues, submitLabel, task
   const loading = isLoading || isSubmitting;
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6 max-h-[80vh] overflow-y-auto px-1 pb-4 scrollbar-hide">
-      <div className="space-y-4">
-        {/* Title & AI Button */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="title" className="text-sm font-semibold">Title</Label>
-          </div>
-          <Input 
-            id="title" 
-            {...register('title', { required: true })} 
-            placeholder="What needs to be done?" 
-            className="text-lg font-medium h-12 focus-visible:ring-blue-500"
-          />
-          {errors.title && <span className="text-xs text-red-500">Title is required</span>}
-        </div>
-
-        {/* Description */}
-        <div className="space-y-2">
-          <Label htmlFor="description" className="text-sm font-semibold">Description</Label>
-          <RichTextEditor 
-            value={descriptionValue || ''} 
-            onChange={(val) => setValue('description', val)} 
-            placeholder="Add context, links, or notes..." 
-          />
-        </div>
-
-        {/* Priority & Category */}
-        <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col h-full max-h-[85vh]">
+      <div className="flex-1 overflow-y-auto px-1 pb-6 space-y-6 scrollbar-hide">
+        <div className="space-y-4">
+          {/* Title */}
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Priority</Label>
-            <Select
-              value={watch('priority')}
-              onValueChange={(v) => setValue('priority', v as TaskPriority)}
-            >
-              <SelectTrigger className="bg-white dark:bg-slate-900">
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="title" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Title</Label>
+            <Input 
+              id="title" 
+              {...register('title', { required: true })} 
+              placeholder="What needs to be done?" 
+              className="text-lg font-bold h-12 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 bg-white dark:bg-slate-900 shadow-sm"
+            />
+            {errors.title && <span className="text-xs text-red-500 font-medium">Title is required</span>}
           </div>
 
+          {/* Description */}
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Category</Label>
-            <Select
-              value={watch('category')}
-              onValueChange={(v) => setValue('category', v as TaskCategory)}
-            >
-              <SelectTrigger className="bg-white dark:bg-slate-900">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="work">Work</SelectItem>
-                <SelectItem value="personal">Personal</SelectItem>
-                <SelectItem value="health">Health</SelectItem>
-                <SelectItem value="finance">Finance</SelectItem>
-                <SelectItem value="shopping">Shopping</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="description" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Description</Label>
+            <RichTextEditor 
+              value={descriptionValue || ''} 
+              onChange={(val) => setValue('description', val)} 
+              placeholder="Add context, links, or notes..." 
+            />
           </div>
-        </div>
 
-        {/* Recurring & Dates */}
-        <div className="grid grid-cols-1 gap-4">
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">Recurring</Label>
-            <Select
-              value={watch('recurringPattern') || 'none'}
-              onValueChange={(v) => setValue('recurringPattern', v as any)}
-            >
-              <SelectTrigger className="bg-white dark:bg-slate-900">
-                <SelectValue placeholder="No repeat" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No repeat</SelectItem>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+          {/* Priority & Category */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Priority</Label>
+              <Select
+                value={watch('priority')}
+                onValueChange={(v) => setValue('priority', v as TaskPriority)}
+              >
+                <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 h-10">
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* Due Date & Time */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="dueDate" className="text-sm font-semibold">Due Date</Label>
-            <Input id="dueDate" type="date" {...register('dueDate')} className="bg-white dark:bg-slate-900" />
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Category</Label>
+              <Select
+                value={watch('category')}
+                onValueChange={(v) => setValue('category', v as TaskCategory)}
+              >
+                <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 h-10">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="work">Work</SelectItem>
+                  <SelectItem value="personal">Personal</SelectItem>
+                  <SelectItem value="health">Health</SelectItem>
+                  <SelectItem value="finance">Finance</SelectItem>
+                  <SelectItem value="shopping">Shopping</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="dueTime" className="text-sm font-semibold">Due Time</Label>
-            <Input id="dueTime" type="time" {...register('dueTime')} className="bg-white dark:bg-slate-900" />
-          </div>
-        </div>
 
-        {/* Tags */}
-        <div className="space-y-2">
-          <Label className="text-sm font-semibold flex items-center gap-2">
-            <TagIcon className="h-3 w-3 text-slate-400" />
-            Tags
-          </Label>
-          <TagInput 
-            tags={tags} 
-            onChange={(newTags) => setValue('tags', newTags)} 
-            placeholder="Work, urgent, home..." 
-          />
+          {/* Recurring & Dates */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Recurring</Label>
+              <Select
+                value={watch('recurringPattern') || 'none'}
+                onValueChange={(v) => setValue('recurringPattern', v as any)}
+              >
+                <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 h-10">
+                  <SelectValue placeholder="No repeat" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No repeat</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dueDate" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Due Date</Label>
+              <Input 
+                id="dueDate" 
+                type="date" 
+                {...register('dueDate')} 
+                className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 h-10 w-full" 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="dueTime" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Due Time</Label>
+              <Input 
+                id="dueTime" 
+                type="time" 
+                {...register('dueTime')} 
+                className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 h-10 w-full" 
+              />
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+              <TagIcon className="h-3 w-3 text-slate-400" />
+              Tags
+            </Label>
+            <TagInput 
+              tags={tags} 
+              onChange={(newTags) => setValue('tags', newTags)} 
+              placeholder="Work, urgent, home..." 
+            />
+          </div>
         </div>
       </div>
 
-      <div className="pt-4 border-t sticky bottom-0 bg-white dark:bg-slate-950 pb-2 z-10">
-        <Button type="submit" className="w-full h-12 text-lg font-bold shadow-lg shadow-blue-500/20" disabled={loading}>
+      <div className="pt-6 border-t bg-white dark:bg-slate-950/50 mt-2">
+        <Button 
+          type="submit" 
+          className="w-full h-12 text-lg font-bold shadow-xl shadow-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border-none" 
+          disabled={loading}
+        >
           {loading ? (submitLabel === 'Save Changes' ? 'Saving...' : 'Creating...') : (submitLabel || 'Create Task')}
         </Button>
       </div>

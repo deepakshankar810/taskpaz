@@ -167,12 +167,12 @@ export default function FocusPage() {
   
   const today = new Date().toISOString().split('T')[0];
   const todayFocused = sessionLog
-    .filter(s => s.completedAt.startsWith(today))
+    .filter(s => s.completedAt && s.completedAt.startsWith(today))
     .reduce((acc, s) => acc + s.minutes, 0);
 
   const calculateStreak = () => {
     if (sessionLog.length === 0) return 0;
-    const dates = Array.from(new Set(sessionLog.map(s => s.completedAt.split('T')[0]))).sort().reverse();
+    const dates = Array.from(new Set(sessionLog.filter(s => s.completedAt).map(s => s.completedAt.split('T')[0]))).sort().reverse();
     let streak = 0;
     let current = new Date();
     

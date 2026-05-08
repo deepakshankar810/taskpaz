@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, Search, Bell, Check, AlertCircle, Clock, Calendar } from 'lucide-react';
+import { Menu, Search, Bell, Check, AlertCircle, Clock, Calendar, PanelLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -20,9 +20,11 @@ import { NavbarMusicPlayer } from '@/components/focus/NavbarMusicPlayer';
 
 interface TopBarProps {
   onMenuClick: () => void;
+  onToggleCollapse: () => void;
+  isCollapsed: boolean;
 }
 
-export function TopBar({ onMenuClick }: TopBarProps) {
+export function TopBar({ onMenuClick, onToggleCollapse, isCollapsed }: TopBarProps) {
   const { user } = useAuth();
   const { tasks } = useTasksContext();
   const { subscriptions, savingsGoals } = useFinanceContext();
@@ -204,6 +206,15 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           onClick={onMenuClick}
         >
           <Menu className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden md:flex text-slate-500 hover:text-blue-500 transition-colors"
+          onClick={onToggleCollapse}
+          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        >
+          <PanelLeft className={`h-5 w-5 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
         </Button>
         <form onSubmit={handleSearch} className="relative hidden md:block w-96">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />

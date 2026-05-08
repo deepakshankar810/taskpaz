@@ -20,6 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const isMobile = useIsMobile();
 
   // Auto-close sidebar on mobile when navigating
@@ -54,8 +55,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-900">
       {/* Desktop Sidebar */}
       {!isMobile && (
-        <div className="hidden md:flex">
-          <Sidebar />
+        <div className={`hidden md:flex transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}>
+          <Sidebar isCollapsed={isCollapsed} />
         </div>
       )}
 
@@ -81,7 +82,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <MusicProvider>
                   <div className="flex flex-1 flex-col overflow-hidden">
                     <Suspense fallback={<div className="h-16 border-b bg-white dark:bg-slate-950" />}>
-                      <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+                      <TopBar 
+                        onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
+                        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+                        isCollapsed={isCollapsed}
+                      />
                     </Suspense>
                     <main className="flex-1 overflow-auto relative pb-24 md:pb-0">
                       <div className="animate-in fade-in duration-300">

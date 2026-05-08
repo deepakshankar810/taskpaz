@@ -246,18 +246,20 @@ function TasksContent() {
 
         {/* Edit Task Dialog */}
         <Dialog open={isEditTaskOpen} onOpenChange={setIsEditTaskOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Task</DialogTitle>
+          <DialogContent className="max-w-2xl p-0 overflow-hidden border-none shadow-2xl">
+            <DialogHeader className="p-6 pb-0">
+              <DialogTitle className="text-2xl font-bold">Edit Task</DialogTitle>
             </DialogHeader>
-            {taskToEdit && (
-              <TaskForm
-                onSubmit={handleEditTask}
-                isLoading={isSaving}
-                submitLabel="Save Changes"
-                defaultValues={taskToEdit}
-              />
-            )}
+            <div className="p-6 pt-4">
+              {taskToEdit && (
+                <TaskForm
+                  onSubmit={handleEditTask}
+                  isLoading={isSaving}
+                  submitLabel="Save Changes"
+                  defaultValues={taskToEdit}
+                />
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </div>

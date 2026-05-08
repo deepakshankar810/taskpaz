@@ -126,9 +126,11 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
   }, [value, editor]);
 
   return (
-    <div className="border border-slate-200 dark:border-slate-800 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
+    <div className="border border-slate-200 dark:border-slate-800 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all shadow-sm">
       <MenuBar editor={editor} />
-      <EditorContent editor={editor} />
+      <div className="bg-white dark:bg-slate-900/50 min-h-[150px]">
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 }
