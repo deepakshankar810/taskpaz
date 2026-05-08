@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, Plus, Minus, Flame, Coffee, BookOpen, Code2, Dumbbell, Music, Pencil, CheckCircle2, Trash2, BarChart3, TrendingUp, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,23 +71,54 @@ export default function FocusPage() {
   const { user } = useAuth();
   const { vibe, setVibe, availableVibes } = useThemeAccent();
 
+  const lastProcessedSession = useRef<string | null>(null);
+
+  // 1. Initial Load of sessions
+  useEffect(() => {
+    const loadSessions = async () => {
+        if (user) {
+            const dbSessions = await getFocusSessions(user.id);
+            setSessionLog(dbSessions.map(s => ({
+                id: s.id,
+                label: s.label,
+                minutes: s.duration_minutes,
+                completedAt: s.completed_at,
+                taskId: s.task_id
+            })));
+        } else {
+            const saved = localStorage.getItem(SESSION_LOG_KEY);
+            if (saved) setSessionLog(JSON.parse(saved));
+        }
+    };
+    loadSessions();
+  }, [user]);
+
+  // 2. Timer Subscription & Saving
   useEffect(() => {
     const unsub = timerStore.subscribe(async (s) => {
       setTimerState(s);
+      
+      // Check for completion
       if (s.timeLeft === 0 && !s.isRunning && s.totalSeconds > 0) {
+        // Create a unique key for this session to avoid double-processing
+        const sessionKey = `${s.label}-${s.totalSeconds}-${new Date().getMinutes()}`;
+        if (lastProcessedSession.current === sessionKey) return;
+        lastProcessedSession.current = sessionKey;
+
         const minutes = Math.round(s.totalSeconds / 60);
         
         // 1. Sync to database
         if (user) {
           try {
+            console.log('[Focus] Saving session to DB...', { label: s.label, minutes });
             const saved = await saveFocusSession({
               user_id: user.id,
-              task_id: selectedTaskId,
+              task_id: selectedTaskId === 'none' ? undefined : selectedTaskId,
               label: s.label,
               duration_minutes: minutes,
             });
 
-            // 2. Update UI with the saved entry (including real ID)
+            // 2. Update UI with the saved entry
             const entry: SessionEntry = {
               id: saved.id,
               label: saved.label,
@@ -106,7 +137,7 @@ export default function FocusPage() {
                 }
             }
           } catch (err) {
-            console.error('Failed to sync focus session:', err);
+            console.error('[Focus] Failed to sync session:', err);
           }
         } else {
             // Fallback for non-logged in users (local storage)
@@ -125,24 +156,6 @@ export default function FocusPage() {
         }
       }
     });
-
-    const loadSessions = async () => {
-        if (user) {
-            const dbSessions = await getFocusSessions(user.id);
-            setSessionLog(dbSessions.map(s => ({
-                id: s.id,
-                label: s.label,
-                minutes: s.duration_minutes,
-                completedAt: s.completed_at,
-                taskId: s.task_id
-            })));
-        } else {
-            const saved = localStorage.getItem(SESSION_LOG_KEY);
-            if (saved) setSessionLog(JSON.parse(saved));
-        }
-    };
-
-    loadSessions();
 
     return () => { unsub(); };
   }, [user, tasks, selectedTaskId]);
