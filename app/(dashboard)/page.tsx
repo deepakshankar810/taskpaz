@@ -15,8 +15,7 @@ import { StreakCard } from '@/components/dashboard/StreakCard';
 import { Eye, EyeOff, Sparkles } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const [userProfile, setUserProfile] = useState<User | null>(null);
+  const { user, profile } = useAuth();
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [currency, setCurrency] = useState('$');
   const [zenMode, setZenMode] = useState(false);
@@ -32,37 +31,18 @@ export default function DashboardPage() {
 
   const recentProjects = projects.slice(0, 5);
 
-  // Profile Cache & Greeting
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedCurrency = localStorage.getItem('finance_currency');
       if (savedCurrency) setCurrency(savedCurrency);
     }
-
-    const cachedProfile = localStorage.getItem(`profile_${user?.id}`);
-    if (cachedProfile) {
-      try {
-        setUserProfile(JSON.parse(cachedProfile));
-      } catch (err) { }
-    }
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id) return;
-    const fetchProfile = async () => {
-      try {
-        const data = await getUserProfile(user.id);
-        if (data) {
-          setUserProfile(data);
-          localStorage.setItem(`profile_${user.id}`, JSON.stringify(data));
-        }
-      } catch (e) {
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
-    fetchProfile();
-  }, [user?.id]);
+    if (user?.id) {
+       setLoadingProfile(false);
+    }
+  }, [user?.id, profile]);
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -71,7 +51,7 @@ export default function DashboardPage() {
     return 'Good Evening';
   };
 
-  const nameToDisplay = userProfile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const nameToDisplay = profile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const firstName = nameToDisplay.split(' ')[0];
 
   const formatCurrency = (val: number) => {

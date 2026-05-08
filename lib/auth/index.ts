@@ -51,4 +51,23 @@ export const getUserProfile = async (userId: string) => {
     return null;
   }
 };
+export const updateUserProfile = async (profile: { id: string, name: string, email: string }) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .upsert({
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        updated_at: new Date()
+      })
+      .select()
+      .single();
 
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error: any) {
+    console.error('Error updating user profile:', error);
+    return { data: null, error };
+  }
+};

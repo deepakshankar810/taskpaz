@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useNotification } from '@/components/providers/NotificationProvider';
-import { getUserProfile } from '@/lib/auth';
+import { getUserProfile, updateUserProfile } from '@/lib/auth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Check } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, profile: authProfile, refreshProfile } = useAuth();
   const { theme, setTheme } = useTheme();
   const { requestPermission, sendNotification } = useNotification();
   const { vibe, setVibe, availableVibes } = useThemeAccent();
@@ -41,30 +41,42 @@ export default function SettingsPage() {
       if (savedBrowser !== null) setBrowserNotifs(savedBrowser === 'true');
     }
 
-    const fetchProfile = async () => {
-      try {
-        const profile = await getUserProfile(user.id);
-        if (profile) {
-          setName(profile.name || user.user_metadata?.full_name || '');
-        } else {
-          setName(user.user_metadata?.full_name || '');
-        }
-      } catch (err) {
-        console.error('Failed to load profile:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [user]);
+    if (authProfile) {
+      setName(authProfile.name || '');
+      setLoading(false);
+    } else if (user.user_metadata?.full_name) {
+      setName(user.user_metadata.full_name);
+      setLoading(false);
+    } else {
+      setLoading(false);
+    }
+  }, [user, authProfile]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.id) return;
-    const updatedProfile = { id: user.id, name, email: user.email || '', updatedAt: new Date() };
-    localStorage.setItem(`profile_${user.id}`, JSON.stringify(updatedProfile));
-    toast.success('Profile updated successfully');
+    
+    setLoading(true);
+    try {
+      const { data, error } = await updateUserProfile({
+        id: user.id,
+        name,
+        email: user.email || ''
+      });
+
+      if (error) throw error;
+
+      if (data) {
+        localStorage.setItem(`profile_${user.id}`, JSON.stringify(data));
+        await refreshProfile();
+        toast.success('Profile updated successfully');
+      }
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+      toast.error('Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleToggleNotif = async (type: 'browser', val: boolean) => {

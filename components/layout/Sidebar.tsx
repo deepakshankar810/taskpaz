@@ -42,7 +42,7 @@ interface SidebarProps {
 export function Sidebar({ onItemClick }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [mounted, setMounted] = useState(false);
   const { vibe, setVibe, availableVibes } = useThemeAccent();
 
@@ -104,11 +104,11 @@ export function Sidebar({ onItemClick }: SidebarProps) {
         <div className="flex items-center gap-3 mb-4">
           {/* Fallback avatar simply using first letter */}
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
-            {mounted ? (user?.user_metadata?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U') : 'U'}
+            {mounted ? (profile?.name?.[0] || user?.user_metadata?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U') : 'U'}
           </div>
           <div className="overflow-hidden">
             <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
-              {mounted ? (user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User') : 'User'}
+              {mounted ? (profile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User') : 'User'}
             </p>
             <p className="truncate text-xs text-slate-500">
               {mounted ? user?.email : ''}
