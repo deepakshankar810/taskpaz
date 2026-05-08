@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Plus, Minus, Flame, Coffee, BookOpen, Code2, Dumbbell, Music, Pencil, CheckCircle2, Trash2, BarChart3, TrendingUp, Calendar } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, Minus, Flame, Coffee, BookOpen, Code2, Dumbbell, Music, Pencil, CheckCircle2, Trash2, BarChart3, TrendingUp, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -64,6 +64,7 @@ export default function FocusPage() {
   const [zenMode, setZenMode] = useState(false);
   const { tasks } = useTasksContext();
   const [selectedTaskId, setSelectedTaskId] = useState<string>('none');
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const activeTasks = tasks.filter(t => t.status !== 'completed');
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
@@ -98,14 +99,19 @@ export default function FocusPage() {
     const unsub = timerStore.subscribe(async (s) => {
       setTimerState(s);
       
+      // Reset the processed flag when a new timer starts
+      if (s.isRunning) {
+        lastProcessedSession.current = null;
+      }
+      
       // Check for completion
       if (s.timeLeft === 0 && !s.isRunning && s.totalSeconds > 0) {
-        // Create a unique key for this session to avoid double-processing
-        const sessionKey = `${s.label}-${s.totalSeconds}-${new Date().getMinutes()}`;
+        // Use a stable key to avoid double-processing the same completion event
+        const sessionKey = `completed-${s.label}-${s.totalSeconds}`;
         if (lastProcessedSession.current === sessionKey) return;
         lastProcessedSession.current = sessionKey;
 
-        const minutes = Math.round(s.totalSeconds / 60);
+        const minutes = Math.max(1, Math.round(s.totalSeconds / 60));
         
         // 1. Sync to database
         if (user) {
@@ -176,29 +182,66 @@ export default function FocusPage() {
   const progress = totalSeconds > 0 ? ((totalSeconds - timeLeft) / totalSeconds) * 100 : 0;
   
   // Stats calculations
-  const totalFocused = sessionLog.reduce((acc, s) => acc + s.minutes, 0);
+  const totalFocusedAllTime = sessionLog.reduce((acc, s) => acc + s.minutes, 0);
   
-  const today = new Date().toISOString().split('T')[0];
-  const todayFocused = sessionLog
-    .filter(s => s.completedAt && s.completedAt.startsWith(today))
+  const isDateSelected = (dateStr: string) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    return d.getDate() === selectedDate.getDate() && 
+           d.getMonth() === selectedDate.getMonth() && 
+           d.getFullYear() === selectedDate.getFullYear();
+  };
+
+  const selectedDateFocused = sessionLog
+    .filter(s => isDateSelected(s.completedAt!))
     .reduce((acc, s) => acc + s.minutes, 0);
+
+  const navigateDate = (days: number) => {
+    const next = new Date(selectedDate);
+    next.setDate(next.getDate() + days);
+    setSelectedDate(next);
+  };
+
+  const isTodaySelected = () => {
+    const now = new Date();
+    return selectedDate.getDate() === now.getDate() && 
+           selectedDate.getMonth() === now.getMonth() && 
+           selectedDate.getFullYear() === now.getFullYear();
+  };
 
   const calculateStreak = () => {
     if (sessionLog.length === 0) return 0;
-    const dates = Array.from(new Set(sessionLog.filter(s => s.completedAt).map(s => s.completedAt.split('T')[0]))).sort().reverse();
-    let streak = 0;
-    let current = new Date();
     
-    for (let i = 0; i < dates.length; i++) {
-        const d = new Date(dates[i]);
-        const diff = Math.floor((current.getTime() - d.getTime()) / (1000 * 3600 * 24));
-        if (diff === 0 || diff === 1) {
+    // 1. Get unique sorted dates (newest first)
+    const dates = Array.from(new Set(sessionLog.filter(s => s.completedAt).map(s => s.completedAt.split('T')[0]))).sort().reverse();
+    
+    let streak = 0;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    // If the last session was older than yesterday, streak is 0
+    if (dates[0] !== todayStr && dates[0] !== yesterdayStr) {
+        return 0;
+    }
+
+    // Iterate through dates to find consecutive days
+    let current = new Date(dates[0]);
+    streak = 1;
+
+    for (let i = 1; i < dates.length; i++) {
+        const nextDate = new Date(dates[i]);
+        const diff = Math.round((current.getTime() - nextDate.getTime()) / (1000 * 3600 * 24));
+        
+        if (diff === 1) {
             streak++;
-            current = d;
+            current = nextDate;
         } else {
             break;
         }
     }
+    
     return streak;
   };
 
@@ -430,15 +473,28 @@ export default function FocusPage() {
           {/* Stats & Log (Blurred in Zen Mode) */}
           {!zenMode && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-700">
+              {/* Date Navigation */}
+              <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateDate(-1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300">
+                    {isTodaySelected() ? 'Today' : selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </div>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateDate(1)} disabled={isTodaySelected()}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
               {/* Enhanced Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-100 dark:border-blue-900/30">
                     <CardContent className="p-4 pt-6">
                         <div className="flex items-center gap-2 mb-2 text-blue-600 dark:text-blue-400">
                             <TrendingUp className="h-4 w-4" />
-                            <span className="text-[10px] uppercase font-bold tracking-widest">Today</span>
+                            <span className="text-[10px] uppercase font-bold tracking-widest">{isTodaySelected() ? 'Today' : 'This Day'}</span>
                         </div>
-                        <div className="text-2xl font-bold">{todayFocused}m</div>
+                        <div className="text-2xl font-bold">{selectedDateFocused}m</div>
                         <div className="text-[10px] text-slate-400 mt-1 uppercase">Daily Focus</div>
                     </CardContent>
                 </Card>
@@ -476,7 +532,7 @@ export default function FocusPage() {
                 <CardContent className="space-y-4">
                   <div className="flex items-end justify-between">
                     <div>
-                        <div className="text-4xl font-bold tracking-tight">{totalFocused}m</div>
+                        <div className="text-4xl font-bold tracking-tight">{totalFocusedAllTime}m</div>
                         <p className="text-slate-500 text-xs mt-1 uppercase font-medium">All-time Focused</p>
                     </div>
                     <div className="text-right">
@@ -487,13 +543,13 @@ export default function FocusPage() {
                   
                   <div className="space-y-2 pt-2">
                     <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500 font-medium">Daily Goal</span>
-                        <span className="text-slate-400">{Math.min(100, Math.round((todayFocused / 120) * 100))}%</span>
+                        <span className="text-slate-500 font-medium">{isTodaySelected() ? 'Daily Goal' : 'Day Achievement'}</span>
+                        <span className="text-slate-400">{Math.min(100, Math.round((selectedDateFocused / 120) * 100))}%</span>
                     </div>
                     <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div 
                             className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-1000"
-                            style={{ width: `${Math.min(100, (todayFocused / 120) * 100)}%` }}
+                            style={{ width: `${Math.min(100, (selectedDateFocused / 120) * 100)}%` }}
                         />
                     </div>
                     <p className="text-[10px] text-slate-400 text-center italic">Goal: 2 hours per day</p>
@@ -527,13 +583,21 @@ export default function FocusPage() {
                     </div>
                   ) : (
                     <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                      {sessionLog.map((entry) => {
-                        const taskTitle = getTaskTitle(entry.taskId);
-                        const isToday = entry.completedAt.startsWith(today);
-                        
-                        return (
-                          <div key={entry.id} className="group relative flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800/50 transition-all hover:shadow-md hover:shadow-blue-500/5">
-                            <div className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${isToday ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'bg-slate-300 dark:bg-slate-700'}`} />
+                      {sessionLog
+                        .filter(s => isDateSelected(s.completedAt!))
+                        .map((entry) => {
+                          const taskTitle = getTaskTitle(entry.taskId);
+                          
+                          const completedDate = entry.completedAt ? new Date(entry.completedAt) : null;
+                          const now = new Date();
+                          const isActuallyToday = completedDate && 
+                                         completedDate.getDate() === now.getDate() && 
+                                         completedDate.getMonth() === now.getMonth() && 
+                                         completedDate.getFullYear() === now.getFullYear();
+                          
+                          return (
+                            <div key={entry.id} className="group relative flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800/50 transition-all hover:shadow-md hover:shadow-blue-500/5">
+                              <div className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${isActuallyToday ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'bg-slate-300 dark:bg-slate-700'}`} />
                             
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2">

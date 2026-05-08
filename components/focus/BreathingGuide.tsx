@@ -66,14 +66,17 @@ export function BreathingGuide({ timeLeft }: { timeLeft: number }) {
                 {/* Outer Ring */}
                 <motion.div
                     animate={{
-                        scale: phase === 'inhale' ? 1.8 : phase === 'hold' ? 1.8 : 1,
+                        scale: phase === 'inhale' ? 1.4 : phase === 'hold' ? 1.4 : 1,
                         rotate: 360
                     }}
-                    transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-                    className="absolute w-56 h-56 rounded-full border border-dashed border-blue-300/50"
+                    transition={{ 
+                        scale: { duration: 4, ease: "easeInOut" },
+                        rotate: { duration: 20, repeat: Infinity, ease: "linear" }
+                    }}
+                    className="absolute w-52 h-52 rounded-full border-2 border-dashed border-blue-200/40 dark:border-blue-800/30"
                 />
             </div>
-            <p className="mt-6 text-slate-400 text-[10px] uppercase tracking-widest font-medium">
+            <p className="mt-8 text-slate-400 text-[10px] uppercase tracking-[0.3em] font-bold">
                 Centering Break
             </p>
         </div>
