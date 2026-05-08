@@ -34,7 +34,7 @@ export const saveFocusSession = async (session: Omit<FocusSession, 'id' | 'compl
   }
 };
 
-export const getFocusSessions = async (userId: string, limit = 20) => {
+export const getFocusSessions = async (userId: string, limit = 50) => {
   try {
     const { data, error } = await supabase
       .from(TABLE)
@@ -48,5 +48,20 @@ export const getFocusSessions = async (userId: string, limit = 20) => {
   } catch (error) {
     console.error('[getFocusSessions] Error:', error);
     return [];
+  }
+};
+
+export const deleteFocusSession = async (id: string) => {
+  try {
+    const { error } = await supabase
+      .from(TABLE)
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('[deleteFocusSession] Error:', error);
+    throw error;
   }
 };

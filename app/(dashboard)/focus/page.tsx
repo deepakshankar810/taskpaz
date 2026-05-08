@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, Plus, Minus, Flame, Coffee, BookOpen, Code2, Dumbbell, Music, Pencil, CheckCircle2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, Minus, Flame, Coffee, BookOpen, Code2, Dumbbell, Music, Pencil, CheckCircle2, Trash2, BarChart3, TrendingUp, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +11,7 @@ import { FocusMusicPlayer } from '@/components/focus/FocusMusicPlayer';
 import { useTasksContext } from '@/components/providers/TasksProvider';
 import { WellnessTips } from '@/components/focus/WellnessTips';
 import { updateTask } from '@/lib/db/tasks';
-import { saveFocusSession, getFocusSessions, FocusSession } from '@/lib/db/focus';
+import { saveFocusSession, getFocusSessions, deleteFocusSession, FocusSession } from '@/lib/db/focus';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useThemeAccent } from '@/components/providers/ThemeAccentProvider';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -38,10 +38,11 @@ const PRESETS = [
 const SESSION_LOG_KEY = 'focus_session_log';
 
 interface SessionEntry {
-  id?: string;
+  id: string;
   label: string;
   minutes: number;
   completedAt: string;
+  taskId?: string;
 }
 
 function formatTime(seconds: number) {
@@ -76,23 +77,25 @@ export default function FocusPage() {
       if (s.timeLeft === 0 && !s.isRunning && s.totalSeconds > 0) {
         const minutes = Math.round(s.totalSeconds / 60);
         
-        // 1. Update UI immediately (Optimistic)
-        const entry: SessionEntry = {
-          label: s.label,
-          minutes,
-          completedAt: new Date().toISOString(),
-        };
-        setSessionLog(prev => [entry, ...prev].slice(0, 20));
-
-        // 2. Sync to database
+        // 1. Sync to database
         if (user) {
           try {
-            await saveFocusSession({
+            const saved = await saveFocusSession({
               user_id: user.id,
               task_id: selectedTaskId,
               label: s.label,
               duration_minutes: minutes,
             });
+
+            // 2. Update UI with the saved entry (including real ID)
+            const entry: SessionEntry = {
+              id: saved.id,
+              label: saved.label,
+              minutes: saved.duration_minutes,
+              completedAt: saved.completed_at,
+              taskId: saved.task_id,
+            };
+            setSessionLog(prev => [entry, ...prev].slice(0, 50));
 
             // Update specific task if linked
             if (selectedTaskId && selectedTaskId !== 'none') {
@@ -105,6 +108,20 @@ export default function FocusPage() {
           } catch (err) {
             console.error('Failed to sync focus session:', err);
           }
+        } else {
+            // Fallback for non-logged in users (local storage)
+            const entry: SessionEntry = {
+                id: Math.random().toString(36).substr(2, 9),
+                label: s.label,
+                minutes,
+                completedAt: new Date().toISOString(),
+                taskId: selectedTaskId === 'none' ? undefined : selectedTaskId,
+            };
+            setSessionLog(prev => {
+                const newLog = [entry, ...prev].slice(0, 50);
+                localStorage.setItem(SESSION_LOG_KEY, JSON.stringify(newLog));
+                return newLog;
+            });
         }
       }
     });
@@ -116,7 +133,8 @@ export default function FocusPage() {
                 id: s.id,
                 label: s.label,
                 minutes: s.duration_minutes,
-                completedAt: s.completed_at
+                completedAt: s.completed_at,
+                taskId: s.task_id
             })));
         } else {
             const saved = localStorage.getItem(SESSION_LOG_KEY);
@@ -143,7 +161,50 @@ export default function FocusPage() {
   const { timeLeft, totalSeconds, isRunning, label } = timerState;
   const isBreak = label.toLowerCase().includes('break');
   const progress = totalSeconds > 0 ? ((totalSeconds - timeLeft) / totalSeconds) * 100 : 0;
+  
+  // Stats calculations
   const totalFocused = sessionLog.reduce((acc, s) => acc + s.minutes, 0);
+  
+  const today = new Date().toISOString().split('T')[0];
+  const todayFocused = sessionLog
+    .filter(s => s.completedAt.startsWith(today))
+    .reduce((acc, s) => acc + s.minutes, 0);
+
+  const calculateStreak = () => {
+    if (sessionLog.length === 0) return 0;
+    const dates = Array.from(new Set(sessionLog.map(s => s.completedAt.split('T')[0]))).sort().reverse();
+    let streak = 0;
+    let current = new Date();
+    
+    for (let i = 0; i < dates.length; i++) {
+        const d = new Date(dates[i]);
+        const diff = Math.floor((current.getTime() - d.getTime()) / (1000 * 3600 * 24));
+        if (diff === 0 || diff === 1) {
+            streak++;
+            current = d;
+        } else {
+            break;
+        }
+    }
+    return streak;
+  };
+
+  const streak = calculateStreak();
+
+  const handleDeleteSession = async (id: string) => {
+    if (!user) return;
+    try {
+        await deleteFocusSession(id);
+        setSessionLog(prev => prev.filter(s => s.id !== id));
+    } catch (err) {
+        console.error('Failed to delete session:', err);
+    }
+  };
+
+  const getTaskTitle = (taskId?: string) => {
+    if (!taskId || taskId === 'none') return null;
+    return tasks.find(t => t.id === taskId)?.title;
+  };
 
   return (
     <div className={`space-y-6 p-6 md:p-10 lg:p-14 transition-all duration-500 ${zenMode ? 'max-w-4xl mx-auto' : ''}`}>
@@ -355,19 +416,74 @@ export default function FocusPage() {
           
           {/* Stats & Log (Blurred in Zen Mode) */}
           {!zenMode && (
-            <div className="space-y-6 animate-in fade-in duration-700">
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-700">
+              {/* Enhanced Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-100 dark:border-blue-900/30">
+                    <CardContent className="p-4 pt-6">
+                        <div className="flex items-center gap-2 mb-2 text-blue-600 dark:text-blue-400">
+                            <TrendingUp className="h-4 w-4" />
+                            <span className="text-[10px] uppercase font-bold tracking-widest">Today</span>
+                        </div>
+                        <div className="text-2xl font-bold">{todayFocused}m</div>
+                        <div className="text-[10px] text-slate-400 mt-1 uppercase">Daily Focus</div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-100 dark:border-orange-900/30">
+                    <CardContent className="p-4 pt-6">
+                        <div className="flex items-center gap-2 mb-2 text-orange-600 dark:text-orange-400">
+                            <Flame className="h-4 w-4" />
+                            <span className="text-[10px] uppercase font-bold tracking-widest">Streak</span>
+                        </div>
+                        <div className="text-2xl font-bold">{streak}</div>
+                        <div className="text-[10px] text-slate-400 mt-1 uppercase">Days Active</div>
+                    </CardContent>
+                </Card>
+              </div>
+
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Session Stats</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-blue-500" />
+                        Session Stats
+                    </CardTitle>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <Info className="h-4 w-4 text-slate-300" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="text-xs">Based on your last {sessionLog.length} sessions</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">{totalFocused}m</div>
-                    <p className="text-slate-500 text-sm mt-1">Total focused time</p>
+                  <div className="flex items-end justify-between">
+                    <div>
+                        <div className="text-4xl font-bold tracking-tight">{totalFocused}m</div>
+                        <p className="text-slate-500 text-xs mt-1 uppercase font-medium">All-time Focused</p>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-xl font-semibold text-slate-700 dark:text-slate-300">{sessionLog.length}</div>
+                        <p className="text-slate-400 text-[10px] uppercase font-medium">Sessions</p>
+                    </div>
                   </div>
-                  <div className="h-px bg-slate-100 dark:bg-slate-800" />
-                  <div className="text-slate-600 dark:text-slate-400 text-sm">
-                    <span className="font-semibold text-slate-900 dark:text-white">{sessionLog.length}</span> session{sessionLog.length !== 1 ? 's' : ''} completed
+                  
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500 font-medium">Daily Goal</span>
+                        <span className="text-slate-400">{Math.min(100, Math.round((todayFocused / 120) * 100))}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div 
+                            className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-1000"
+                            style={{ width: `${Math.min(100, (todayFocused / 120) * 100)}%` }}
+                        />
+                    </div>
+                    <p className="text-[10px] text-slate-400 text-center italic">Goal: 2 hours per day</p>
                   </div>
                 </CardContent>
               </Card>
@@ -375,26 +491,73 @@ export default function FocusPage() {
               {/* Session Log */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Session Log</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-blue-500" />
+                        Session Log
+                    </CardTitle>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                        Recent {sessionLog.length}
+                    </span>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {sessionLog.length === 0 ? (
-                    <p className="text-slate-400 text-sm text-center py-8">
-                      No sessions yet.<br />Start your first focus session!
-                    </p>
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="h-12 w-12 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mb-4">
+                        <Coffee className="h-6 w-6 text-slate-300" />
+                      </div>
+                      <p className="text-slate-400 text-sm font-medium">
+                        No sessions yet.<br />
+                        <span className="text-xs font-normal">Start your first focus session to see it here!</span>
+                      </p>
+                    </div>
                   ) : (
-                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                      {sessionLog.map((entry, i) => (
-                        <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                          <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{entry.label}</p>
-                            <p className="text-xs text-slate-400">
-                              {entry.minutes}m · {new Date(entry.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                      {sessionLog.map((entry) => {
+                        const taskTitle = getTaskTitle(entry.taskId);
+                        const isToday = entry.completedAt.startsWith(today);
+                        
+                        return (
+                          <div key={entry.id} className="group relative flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800/50 transition-all hover:shadow-md hover:shadow-blue-500/5">
+                            <div className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${isToday ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'bg-slate-300 dark:bg-slate-700'}`} />
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    {entry.label}
+                                </p>
+                                <span className="text-[10px] font-bold text-slate-400 tabular-nums">
+                                    {new Date(entry.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                                <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500">
+                                    <Flame className="h-3 w-3 text-orange-500" />
+                                    {entry.minutes}m focus
+                                </div>
+                                
+                                {taskTitle && (
+                                    <div className="flex items-center gap-1 text-[10px] font-bold text-blue-500 uppercase tracking-tight">
+                                        <CheckCircle2 className="h-3 w-3" />
+                                        {taskTitle}
+                                    </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                onClick={() => handleDeleteSession(entry.id)}
+                            >
+                                <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
