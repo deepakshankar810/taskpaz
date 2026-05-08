@@ -283,22 +283,22 @@ export default function FocusPage() {
                     <BreathingGuide timeLeft={timeLeft} />
                 ) : (
                     <div className="relative">
-                        <svg width="260" height="260" className="-rotate-90">
+                        <svg width="320" height="320" className="-rotate-90">
                         <circle
-                            cx="130" cy="130" r={115}
+                            cx="160" cy="160" r={140}
                             stroke="currentColor"
-                            strokeWidth="8"
+                            strokeWidth="10"
                             fill="none"
                             className="text-slate-100 dark:text-slate-800/50"
                         />
                         <circle
-                            cx="130" cy="130" r={115}
+                            cx="160" cy="160" r={140}
                             stroke="url(#focusGrad)"
-                            strokeWidth="8"
+                            strokeWidth="10"
                             fill="none"
                             strokeLinecap="round"
-                            strokeDasharray={2 * Math.PI * 115}
-                            strokeDashoffset={2 * Math.PI * 115 * (1 - progress / 100)}
+                            strokeDasharray={2 * Math.PI * 140}
+                            strokeDashoffset={2 * Math.PI * 140 * (1 - progress / 100)}
                             style={{ transition: 'stroke-dashoffset 1s linear' }}
                         />
                         <defs>
@@ -309,13 +309,13 @@ export default function FocusPage() {
                         </defs>
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 transition-colors ${zenMode ? 'text-blue-500' : 'text-slate-400'}`}>
+                        <span className={`text-[12px] font-bold tracking-[0.25em] uppercase mb-2 transition-colors ${zenMode ? 'text-blue-500' : 'text-slate-400'}`}>
                             {label}
                         </span>
-                        <span className={`text-5xl font-mono font-bold tabular-nums tracking-tight ${isRunning ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                        <span className={`text-6xl font-mono font-bold tabular-nums tracking-tight ${isRunning ? 'text-blue-600 dark:text-blue-400' : ''}`}>
                             {formatTime(timeLeft)}
                         </span>
-                        {!zenMode && <span className="text-slate-400 text-[10px] mt-1 font-medium">{Math.round(progress)}% complete</span>}
+                        {!zenMode && <span className="text-slate-400 text-xs mt-2 font-medium">{Math.round(progress)}% complete</span>}
                         </div>
                     </div>
                 )}
