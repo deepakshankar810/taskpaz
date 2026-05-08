@@ -479,17 +479,26 @@ export default function FocusPage() {
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
                 
-                <div className="relative flex items-center gap-2 px-3 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
+                <div 
+                    className="relative flex items-center gap-2 px-3 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+                    onClick={(e) => {
+                        const input = e.currentTarget.querySelector('input');
+                        if (input && 'showPicker' in input) input.showPicker();
+                    }}
+                >
                     <Calendar className="h-3.5 w-3.5 text-blue-500 group-hover:scale-110 transition-transform" />
                     <span className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300">
                         {isTodaySelected() ? 'Today' : selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: selectedDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined })}
                     </span>
                     <input 
                         type="date" 
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full pointer-events-none"
                         value={selectedDate.toLocaleDateString('en-CA')}
                         onChange={(e) => {
-                            if (e.target.value) setSelectedDate(new Date(e.target.value));
+                            if (e.target.value) {
+                                const [y, m, d] = e.target.value.split('-').map(Number);
+                                setSelectedDate(new Date(y, m - 1, d));
+                            }
                         }}
                         max={new Date().toLocaleDateString('en-CA')}
                     />
