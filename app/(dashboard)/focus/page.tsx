@@ -474,14 +474,28 @@ export default function FocusPage() {
           {!zenMode && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-700">
               {/* Date Navigation */}
-              <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateDate(-1)}>
+              <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
+                <Button variant="ghost" size="icon" className="h-8 w-8 z-10" onClick={() => navigateDate(-1)}>
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <div className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300">
-                    {isTodaySelected() ? 'Today' : selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                
+                <div className="relative flex items-center gap-2 px-3 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
+                    <Calendar className="h-3.5 w-3.5 text-blue-500 group-hover:scale-110 transition-transform" />
+                    <span className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300">
+                        {isTodaySelected() ? 'Today' : selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: selectedDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined })}
+                    </span>
+                    <input 
+                        type="date" 
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        value={selectedDate.toLocaleDateString('en-CA')}
+                        onChange={(e) => {
+                            if (e.target.value) setSelectedDate(new Date(e.target.value));
+                        }}
+                        max={new Date().toLocaleDateString('en-CA')}
+                    />
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateDate(1)} disabled={isTodaySelected()}>
+
+                <Button variant="ghost" size="icon" className="h-8 w-8 z-10" onClick={() => navigateDate(1)} disabled={isTodaySelected()}>
                     <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
