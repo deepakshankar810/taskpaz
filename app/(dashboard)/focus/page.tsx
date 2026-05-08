@@ -235,7 +235,7 @@ export default function FocusPage() {
                 </div>
             )}
 
-            <CardContent className="flex flex-col items-center gap-6 py-10">
+            <CardContent className="flex flex-col items-center gap-4 py-6">
               {/* Task Selector */}
               {!zenMode && (
                 <div className="w-full max-w-xs space-y-2">
@@ -263,33 +263,29 @@ export default function FocusPage() {
                   </div>
               )}
 
-              {/* Session label */}
-              <span className={`text-sm font-medium tracking-wide uppercase transition-colors ${zenMode ? 'text-blue-500 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
-                {label}
-              </span>
 
               {/* Breathing Guide / Timer */}
               <div className="relative flex flex-col items-center">
                 {isBreak && isRunning ? (
-                    <BreathingGuide />
+                    <BreathingGuide timeLeft={timeLeft} />
                 ) : (
                     <div className="relative">
-                        <svg width="300" height="300" className="-rotate-90">
+                        <svg width="260" height="260" className="-rotate-90">
                         <circle
-                            cx="150" cy="150" r={130}
+                            cx="130" cy="130" r={115}
                             stroke="currentColor"
                             strokeWidth="8"
                             fill="none"
                             className="text-slate-100 dark:text-slate-800/50"
                         />
                         <circle
-                            cx="150" cy="150" r={130}
+                            cx="130" cy="130" r={115}
                             stroke="url(#focusGrad)"
                             strokeWidth="8"
                             fill="none"
                             strokeLinecap="round"
-                            strokeDasharray={2 * Math.PI * 130}
-                            strokeDashoffset={2 * Math.PI * 130 * (1 - progress / 100)}
+                            strokeDasharray={2 * Math.PI * 115}
+                            strokeDashoffset={2 * Math.PI * 115 * (1 - progress / 100)}
                             style={{ transition: 'stroke-dashoffset 1s linear' }}
                         />
                         <defs>
@@ -300,38 +296,42 @@ export default function FocusPage() {
                         </defs>
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className={`text-6xl font-mono font-bold tabular-nums tracking-tight ${isRunning ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                        <span className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 transition-colors ${zenMode ? 'text-blue-500' : 'text-slate-400'}`}>
+                            {label}
+                        </span>
+                        <span className={`text-5xl font-mono font-bold tabular-nums tracking-tight ${isRunning ? 'text-blue-600 dark:text-blue-400' : ''}`}>
                             {formatTime(timeLeft)}
                         </span>
-                        {!zenMode && <span className="text-slate-400 text-xs mt-1">{Math.round(progress)}% complete</span>}
+                        {!zenMode && <span className="text-slate-400 text-[10px] mt-1 font-medium">{Math.round(progress)}% complete</span>}
                         </div>
                     </div>
                 )}
               </div>
 
               {/* Controls */}
-              <div className={`flex items-center gap-6 transition-all ${zenMode ? 'scale-110' : ''}`}>
+              <div className={`flex items-center gap-8 transition-all ${zenMode ? 'scale-110 mt-4' : 'mt-2'}`}>
                 {!zenMode && (
-                    <Button size="icon" variant="outline" className="h-12 w-12 rounded-full" onClick={timerStore.resetTimer}>
+                    <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20" onClick={timerStore.resetTimer}>
                         <RotateCcw className="h-5 w-5" />
                     </Button>
                 )}
                 <Button
-                  className={`h-20 w-20 rounded-full font-bold shadow-xl transition-all ${
+                  className={`h-16 w-16 rounded-full font-bold shadow-xl transition-all ${
                     isRunning
                       ? 'bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white'
                       : 'bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white shadow-blue-500/20'
                   }`}
                   onClick={() => isRunning ? timerStore.pauseTimer() : timerStore.startTimer()}
                 >
-                  {isRunning ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8 ml-1" />}
+                  {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
                 </Button>
-                {zenMode && (
-                    <Button size="icon" variant="ghost" className="h-12 w-12 rounded-full" onClick={timerStore.resetTimer}>
+                {zenMode ? (
+                    <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full" onClick={timerStore.resetTimer}>
                         <RotateCcw className="h-5 w-5 text-slate-400" />
                     </Button>
+                ) : (
+                    <div className="w-10" />
                 )}
-                {!zenMode && <div className="h-12 w-12" />}
               </div>
             </CardContent>
           </Card>
