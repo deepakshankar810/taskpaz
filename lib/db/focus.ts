@@ -18,7 +18,7 @@ export const saveFocusSession = async (session: Omit<FocusSession, 'id' | 'compl
       .insert([
         {
           user_id: session.user_id,
-          task_id: session.task_id === 'none' ? null : session.task_id,
+          task_id: session.task_id && session.task_id !== 'none' ? session.task_id : null,
           label: session.label,
           duration_minutes: session.duration_minutes,
         }
